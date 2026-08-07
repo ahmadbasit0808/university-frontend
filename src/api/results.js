@@ -1,0 +1,20 @@
+import api from "./axios";
+
+export const getAllCgpa = () => api.get("/results");
+export const getDashboardTopStudents = () =>
+  api.get("/results/dashboard/top-students");
+export const getTranscript = (rollNo) => api.get(`/results/${rollNo}`);
+export const getSemesterResults = (semesterId) =>
+  api.get(`/results/semester/${semesterId}`);
+export const getStudentSemesterResult = (semesterId, rollNo) =>
+  api.get(`/results/semester/${semesterId}/${rollNo}`);
+export const publishSemesterResults = (semesterId) =>
+  api.post(`/results/semester/${semesterId}/publish`);
+
+// Admin: manually set CR/GR for a semester (role: "cr" | "gr")
+export const setTopStudent = (metadataId, rollNo, role) =>
+  api.post("/results/dashboard/top-students", { metadataId, rollNo, role });
+
+// Admin: clear a manual CR/GR override, reverting to computed GPA leader
+export const clearTopStudent = (metadataId, role) =>
+  api.delete("/results/dashboard/top-students", { data: { metadataId, role } });
