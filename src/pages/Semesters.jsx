@@ -78,9 +78,28 @@ export default function Semesters() {
     { key: "session", label: "Session" },
     { key: "semester", label: "Semester" },
     {
+      key: "semester_start_date",
+      label: "Start Date",
+      render: (val) =>
+        val
+          ? new Date(val).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : "-",
+    },
+    {
       key: "declaration_date",
-      label: "Declaration Date",
-      render: (val) => (val ? new Date(val).toLocaleDateString() : "-"),
+      label: "End Date",
+      render: (val) =>
+        val
+          ? new Date(val).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : "-",
     },
     {
       key: "actions",
