@@ -183,10 +183,7 @@ export default function StudentProfile() {
                         )
                       }
                     >
-                      <span className="sp-semester-name">
-                        {sem.semester}{" "}
-                        <span className="text-muted">({sem.session})</span>
-                      </span>
+                      <span className="sp-semester-name">{sem.semester}</span>
                       <span className={`grade-badge ${gpaClass}`}>
                         GPA {gpa.toFixed(2)}
                       </span>
