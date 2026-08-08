@@ -106,7 +106,9 @@ export default function Semesters() {
       label: "Actions",
       sortable: false,
       render: (_, row) => (
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div
+          style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}
+        >
           <button
             className="btn btn-sm btn-primary"
             onClick={() => navigate(`/semesters/${row.id}/courses`)}
@@ -119,6 +121,14 @@ export default function Semesters() {
           >
             Result
           </button>
+          {isAuthenticated && (
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => setConfirmDialog({ open: true, semester: row })}
+            >
+              Delete
+            </button>
+          )}
         </div>
       ),
     },
@@ -148,7 +158,6 @@ export default function Semesters() {
         data={semesters}
         searchable={false}
         loading={loading}
-        onDelete={(semester) => setConfirmDialog({ open: true, semester })}
         emptyMessage="No semesters found."
         defaultSortKey="semester"
         defaultSortDir="asc"

@@ -186,19 +186,6 @@ export default function CourseResultsPage() {
           "—"
         ),
     },
-    {
-      key: "actions2",
-      label: "Components",
-      sortable: false,
-      render: (_, row) => (
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={() => navigate(`/course-results/${row.id}/components`)}
-        >
-          View
-        </button>
-      ),
-    },
   ];
 
   return (
