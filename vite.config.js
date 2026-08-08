@@ -229,7 +229,7 @@ export default defineConfig({
               url.pathname.startsWith("/api/exam-schedule"),
             handler: "NetworkFirst",
             options: {
-              cacheName: "notifications-cache",
+              cacheName: "exams-schedule-cache",
               cacheableResponse: {
                 statuses: [0, 200],
               },

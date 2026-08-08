@@ -72,7 +72,7 @@ export default function Semesters() {
   };
 
   const columns = [
-    { key: "university", label: "University" },
+    // { key: "university", label: "University" },
     // { key: "department", label: "Department" },
     { key: "program", label: "Program" },
     { key: "session", label: "Session" },
@@ -91,7 +91,7 @@ export default function Semesters() {
     },
     {
       key: "declaration_date",
-      label: "End Date",
+      label: "Result Date",
       render: (val) =>
         val
           ? new Date(val).toLocaleDateString("en-GB", {

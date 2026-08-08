@@ -4,7 +4,14 @@ import { getStudent } from "../api/students";
 import { getTranscript } from "../api/results";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
-import { GraduationCap, Mail, Phone, User } from "lucide-react";
+import {
+  GraduationCap,
+  Mail,
+  Phone,
+  User,
+  Calendar,
+  LibraryBig,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -80,6 +87,11 @@ export default function StudentProfile() {
 
   const infoItems = [
     { icon: <User size={16} />, label: "Gender", value: student.gender || "—" },
+    {
+      icon: <Calendar size={16} />,
+      label: "Session",
+      value: semesters[0].session || "—",
+    },
     { icon: <Mail size={16} />, label: "Email", value: student.email || "—" },
     { icon: <Phone size={16} />, label: "Phone", value: student.phone || "—" },
   ];
