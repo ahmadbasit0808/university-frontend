@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getSemesterResults, publishSemesterResults } from "../api/results";
 import { getSemester } from "../api/semesters";
 import DataTable from "../components/common/DataTable";
@@ -98,9 +98,18 @@ export default function SemesterResults() {
     <div className="page">
       <div className="page-header">
         <div>
-          <Link to="/results" className="back-link">
-            &larr; Back to Results
-          </Link>
+          <button
+            onClick={() => navigate(-1)}
+            className="back-link"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            &larr; Back
+          </button>
           <h1>
             {semester
               ? `${semester.semester} Semester (${semester.session})`

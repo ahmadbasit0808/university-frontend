@@ -103,15 +103,23 @@ export default function Semesters() {
     },
     {
       key: "actions",
-      label: "Courses",
+      label: "Actions",
       sortable: false,
       render: (_, row) => (
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={() => navigate(`/semesters/${row.id}/courses`)}
-        >
-          View Courses
-        </button>
+        <div style={{ display: "flex", gap: "6px" }}>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => navigate(`/semesters/${row.id}/courses`)}
+          >
+            View Courses
+          </button>
+          <button
+            className="btn btn-sm btn-success"
+            onClick={() => navigate(`/results/semester/${row.id}`)}
+          >
+            Result
+          </button>
+        </div>
       ),
     },
   ];
