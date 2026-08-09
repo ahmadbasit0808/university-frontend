@@ -112,7 +112,7 @@ export default function SemesterResults() {
           </button>
           <h1>
             {semester
-              ? `${semester.semester} Semester (${semester.session})`
+              ? `${semester.semester} (${semester.session})`
               : "Semester Results"}
           </h1>
         </div>
