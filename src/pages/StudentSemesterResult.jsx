@@ -73,7 +73,7 @@ export default function StudentSemesterResult() {
                 <td>{sub.course_code}</td>
                 <td>{sub.course_name}</td>
                 <td>{sub.credit_hours}</td>
-                <td>{sub.marks_obtained}</td>
+                <td>{Number(sub.marks_obtained || 0).toFixed(0)}</td>
                 <td>
                   <span className="grade-badge">{sub.letter_grade}</span>
                 </td>
@@ -91,6 +91,26 @@ export default function StudentSemesterResult() {
                   {subjects?.reduce((s, sub) => s + (sub.credit_hours || 0), 0)}
                 </strong>
               </td>
+              {/* <td>
+                {subjects?.reduce(
+                  (s, sub) => s + (Number(sub.marks_obtained) || 0),
+                  0,
+                )}
+                / {subjects?.length * 100}
+              </td>
+              <td>
+                <span className="grade-badge">
+                  {(
+                    (subjects?.reduce(
+                      (s, sub) => s + (Number(sub.marks_obtained) || 0),
+                      0,
+                    ) /
+                      (subjects?.length * 100)) *
+                    100
+                  ).toFixed(2)}
+                  %
+                </span>
+              </td> */}
               <td colSpan="3"></td>
             </tr>
           </tfoot>

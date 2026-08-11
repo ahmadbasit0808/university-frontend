@@ -87,11 +87,11 @@ export default function StudentProfile() {
 
   const infoItems = [
     { icon: <User size={16} />, label: "Gender", value: student.gender || "—" },
-    {
-      icon: <Calendar size={16} />,
-      label: "Session",
-      value: semesters[0].session || "—",
-    },
+    // {
+    //   icon: <Calendar size={16} />,
+    //   label: "Session",
+    //   value: semesters[0].session || "—",
+    // },
     { icon: <Mail size={16} />, label: "Email", value: student.email || "—" },
     { icon: <Phone size={16} />, label: "Phone", value: student.phone || "—" },
   ];
