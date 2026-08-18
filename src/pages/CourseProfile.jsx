@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCourse, getCourses } from "../api/courses";
 import { getSemesters, getSemesterCourses } from "../api/semesters";
@@ -16,6 +16,18 @@ import {
   User,
   Trophy,
   GitFork,
+  BookMarked,
+  Library,
+  Layers,
+  Search,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  TrendingUp,
+  ArrowRight,
+  Bookmark,
 } from "lucide-react";
 import {
   BarChart,
@@ -42,10 +54,27 @@ const GRADE_COLORS = {
 };
 const GRADE_ORDER = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"];
 
+const parseJsonData = (val) => {
+  if (!val) return null;
+  if (Array.isArray(val) || (typeof val === "object" && val !== null)) return val;
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === "null" || trimmed === "[]" || trimmed === "{}")
+      return null;
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return trimmed;
+    }
+  }
+  return null;
+};
+
 export default function CourseProfile() {
   const { courseCode } = useParams();
   const navigate = useNavigate();
   const chartHeight = window.innerWidth <= 768 ? 260 : 300;
+
   const [course, setCourse] = useState(null);
   const [allCoursesList, setAllCoursesList] = useState([]);
   const [offerings, setOfferings] = useState([]);
@@ -53,12 +82,18 @@ export default function CourseProfile() {
   const [gradeData, setGradeData] = useState([]);
   const [gradeRanges, setGradeRanges] = useState({});
   const [totalStudents, setTotalStudents] = useState(0);
+  const [avgMarks, setAvgMarks] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [topicSearch, setTopicSearch] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState({});
 
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         const [courseRes, coursesListRes, semRes] = await Promise.all([
           getCourse(courseCode),
           getCourses().catch(() => ({ data: [] })),
@@ -108,6 +143,15 @@ export default function CourseProfile() {
         ).flat();
 
         setTotalStudents(results.length);
+
+        // Calculate average marks
+        const validMarks = results
+          .map((r) => parseFloat(r.marks_obtained))
+          .filter((m) => !isNaN(m));
+        if (validMarks.length > 0) {
+          const sum = validMarks.reduce((a, b) => a + b, 0);
+          setAvgMarks((sum / validMarks.length).toFixed(1));
+        }
 
         // Top 3 performers (highest marks obtained)
         const sortedResults = [...results]
@@ -159,6 +203,133 @@ export default function CourseProfile() {
     load();
   }, [courseCode]);
 
+  const handleCopyCode = (e) => {
+    e.stopPropagation();
+    if (course?.course_code) {
+      navigator.clipboard.writeText(course.course_code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const prerequisite =
+    course?.prerequisite ||
+    course?.prerequisites ||
+    course?.prerequisite_course ||
+    course?.prereq;
+
+  const hasPrerequisite =
+    prerequisite != null &&
+    (typeof prerequisite === "string"
+      ? prerequisite.trim() !== "" &&
+        !["none", "null", "n/a", "nil", "—", "-", "no"].includes(
+          prerequisite.trim().toLowerCase(),
+        )
+      : Boolean(prerequisite));
+
+  const prerequisiteStr = hasPrerequisite ? String(prerequisite).trim() : "";
+
+  const matchedCourse = allCoursesList.find(
+    (c) =>
+      c.course_code?.trim().toLowerCase() === prerequisiteStr.toLowerCase() ||
+      c.course_name?.trim().toLowerCase() === prerequisiteStr.toLowerCase(),
+  );
+
+  const prerequisiteCourseName =
+    matchedCourse?.course_name ||
+    course?.prerequisite_name ||
+    prerequisiteStr;
+
+  const prerequisiteCourseCode =
+    matchedCourse?.course_code ||
+    prerequisiteStr;
+
+  const courseDescription = parseJsonData(
+    course?.description ||
+      course?.course_description ||
+      course?.syllabus ||
+      course?.outline,
+  );
+
+  const textbooks = parseJsonData(
+    course?.textbooks || course?.text_books || course?.textbook,
+  );
+
+  const referenceMaterials = parseJsonData(
+    course?.reference_materials ||
+      course?.reference_material ||
+      course?.references ||
+      course?.reference_books,
+  );
+
+  const hasTextbooks =
+    textbooks != null &&
+    (Array.isArray(textbooks)
+      ? textbooks.length > 0
+      : typeof textbooks === "string"
+        ? textbooks.trim() !== ""
+        : Boolean(textbooks));
+
+  const hasReferenceMaterials =
+    referenceMaterials != null &&
+    (Array.isArray(referenceMaterials)
+      ? referenceMaterials.length > 0
+      : typeof referenceMaterials === "string"
+        ? referenceMaterials.trim() !== ""
+        : Boolean(referenceMaterials));
+
+  const hasCourseDescription =
+    courseDescription != null &&
+    (Array.isArray(courseDescription)
+      ? courseDescription.length > 0
+      : typeof courseDescription === "string"
+        ? courseDescription.trim() !== ""
+        : Boolean(courseDescription));
+
+  const [expandedSections, setExpandedSections] = useState({});
+
+  // Filter topics based on search query
+  const filteredOutline = useMemo(() => {
+    if (!Array.isArray(courseDescription)) return courseDescription;
+    if (!topicSearch.trim()) return courseDescription;
+    const q = topicSearch.toLowerCase().trim();
+    return courseDescription.filter((section) => {
+      const headingMatch = (section.heading || section.title || "")
+        .toLowerCase()
+        .includes(q);
+      const topics = Array.isArray(section.topics) ? section.topics : [];
+      const topicMatch = topics.some((t) =>
+        String(t).toLowerCase().includes(q),
+      );
+      return headingMatch || topicMatch;
+    });
+  }, [courseDescription, topicSearch]);
+
+  const toggleSection = (idx) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
+  };
+
+  const isAllExpanded =
+    Array.isArray(courseDescription) &&
+    courseDescription.length > 0 &&
+    courseDescription.every((_, i) => expandedSections[i]);
+
+  const toggleAllSections = () => {
+    if (!Array.isArray(courseDescription)) return;
+    if (isAllExpanded) {
+      setExpandedSections({});
+    } else {
+      const allExp = {};
+      courseDescription.forEach((_, i) => {
+        allExp[i] = true;
+      });
+      setExpandedSections(allExp);
+    }
+  };
+
   if (loading)
     return (
       <div className="page">
@@ -173,43 +344,36 @@ export default function CourseProfile() {
     );
   if (!course) return null;
 
-  const prerequisite =
-    course.prerequisite ||
-    course.prerequisites ||
-    course.prerequisite_course ||
-    course.prereq;
-
-  const hasPrerequisite =
-    prerequisite != null &&
-    (typeof prerequisite === "string"
-      ? prerequisite.trim() !== "" &&
-      !["none", "null", "n/a", "nil", "—", "-", "no"].includes(
-        prerequisite.trim().toLowerCase(),
-      )
-      : Boolean(prerequisite));
-
-  const prerequisiteStr = hasPrerequisite ? String(prerequisite).trim() : "";
-
-  const matchedCourse = allCoursesList.find(
-    (c) =>
-      c.course_code?.trim().toLowerCase() === prerequisiteStr.toLowerCase() ||
-      c.course_name?.trim().toLowerCase() === prerequisiteStr.toLowerCase(),
-  );
-
-  const prerequisiteCourseName =
-    matchedCourse?.course_name ||
-    course.prerequisite_name ||
-    prerequisiteStr;
-
-  const prerequisiteCourseCode =
-    matchedCourse?.course_code ||
-    prerequisiteStr;
-
   const infoItems = [
     {
       icon: <Hash size={16} />,
       label: "Course Code",
-      value: course.course_code,
+      value: (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <code>{course.course_code}</code>
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "2px",
+              color: copiedCode ? "#059669" : "var(--text-muted)",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+            title="Copy course code"
+          >
+            {copiedCode ? <Check size={14} /> : <Copy size={14} />}
+          </button>
+        </span>
+      ),
+    },
+    {
+      icon: <Clock size={16} />,
+      label: "Credit Hours",
+      value: `${course.credit_hours} Credit Hours`,
     },
     {
       icon: <Building2 size={16} />,
@@ -223,67 +387,406 @@ export default function CourseProfile() {
     },
     ...(hasPrerequisite
       ? [
-        {
-          icon: <GitFork size={16} />,
-          label: "Prerequisite",
-          value: (
-            <button
-              type="button"
-              className="btn-link"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
-                fontWeight: 600,
-                fontSize: "13px",
-                padding: 0,
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                color: "#d97706",
-              }}
-              onClick={() =>
-                navigate(`/courses/${encodeURIComponent(prerequisiteCourseCode)}`)
-              }
-              title={`View course ${prerequisiteCourseName}`}
-            >
-              {prerequisiteCourseName} &rarr;
-            </button>
-          ),
-        },
-      ]
+          {
+            icon: <GitFork size={16} />,
+            label: "Prerequisite",
+            value: (
+              <button
+                type="button"
+                className="btn-link"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  padding: "2px 8px",
+                  borderRadius: "6px",
+                  background: "#fef3c7",
+                  border: "1px solid #fde68a",
+                  color: "#92400e",
+                  cursor: "pointer",
+                  textAlign: "right",
+                }}
+                onClick={() =>
+                  navigate(
+                    `/courses/${encodeURIComponent(prerequisiteCourseCode)}`,
+                  )
+                }
+                title={`View course ${prerequisiteCourseName}`}
+              >
+                <span>{prerequisiteCourseName}</span>
+                <ArrowRight size={12} />
+              </button>
+            ),
+          },
+        ]
       : []),
   ];
 
+  const renderBookCards = (books, accentColor = "#3b82f6", bgLight = "#eff6ff") => {
+    if (!books) return null;
+    if (typeof books === "string") {
+      return (
+        <p
+          style={{
+            margin: 0,
+            color: "var(--text)",
+            lineHeight: 1.6,
+            whiteSpace: "pre-line",
+            fontSize: "14px",
+          }}
+        >
+          {books}
+        </p>
+      );
+    }
+    const bookList = Array.isArray(books) ? books : [books];
+    if (bookList.length === 0) return null;
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {bookList.map((book, idx) => {
+          if (typeof book === "string") {
+            return (
+              <div
+                key={idx}
+                style={{
+                  padding: "12px 14px",
+                  background: "#f8fafc",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  color: "var(--text)",
+                }}
+              >
+                {book}
+              </div>
+            );
+          }
+          return (
+            <div
+              key={idx}
+              style={{
+                padding: "14px 16px",
+                background: "var(--card-bg, #ffffff)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "8px",
+                    background: bgLight,
+                    color: accentColor,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <BookOpen size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      color: "var(--text, #0f172a)",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {book.title || "Untitled Book"}
+                  </div>
+                  {book.author && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-muted, #64748b)",
+                        marginTop: "3px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <User size={12} />
+                      <span>{book.author}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {(book.edition || book.publisher || book.year) && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "6px",
+                    paddingLeft: "48px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {book.edition && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        background: "#f1f5f9",
+                        color: "#475569",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {book.edition}
+                    </span>
+                  )}
+                  {book.publisher && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        background: "#eff6ff",
+                        color: "#2563eb",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {book.publisher}
+                    </span>
+                  )}
+                  {book.year && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        background: "#fef3c7",
+                        color: "#b45309",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {book.year}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
+      {/* Hero Header */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg, 16px)",
+          padding: "24px 28px",
+          marginBottom: "24px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "-30px",
+            right: "-30px",
+            width: "160px",
+            height: "160px",
+            background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0) 70%)",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+        />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
           <button
             onClick={() => navigate(-1)}
-            className="back-link"
             style={{
-              background: "none",
-              border: "none",
+              background: "#ffffff",
+              border: "1px solid var(--border)",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--text-muted)",
               cursor: "pointer",
-              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+          >
+            &larr; Back to Courses
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "20px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: "280px" }}>
+            <h1
+              style={{
+                fontSize: "28px",
+                fontWeight: 800,
+                color: "var(--text)",
+                margin: 0,
+                lineHeight: 1.25,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {course.course_name}
+            </h1>
+          </div>
+
+          {/* Quick Stats Pill */}
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            &larr; Back
-          </button>
-          <h1>{course.course_name}</h1>
-          <p className="text-muted">Course Code: {course.course_code}</p>
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "12px 18px",
+                textAlign: "center",
+                minWidth: "100px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 800,
+                  color: "var(--text)",
+                  lineHeight: 1.1,
+                }}
+              >
+                {offerings.length}
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginTop: "2px",
+                }}
+              >
+                Offerings
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "12px 18px",
+                textAlign: "center",
+                minWidth: "100px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 800,
+                  color: "var(--text)",
+                  lineHeight: 1.1,
+                }}
+              >
+                {totalStudents}
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginTop: "2px",
+                }}
+              >
+                Students
+              </div>
+            </div>
+
+            {avgMarks != null && (
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
+                  padding: "12px 18px",
+                  textAlign: "center",
+                  minWidth: "100px",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 800,
+                    color: "#059669",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {avgMarks}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginTop: "2px",
+                  }}
+                >
+                  Avg Score
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="sp-grid">
-        {/* Course Details */}
+        {/* Course Details Card */}
         <div className="sp-card">
           <div className="sp-card-header">
             <span className="sp-card-icon blue">
               <BookOpen size={20} />
             </span>
-            <h3>Course Details</h3>
+            <h3>Course Overview</h3>
           </div>
           <div className="sp-info-list">
             {infoItems.map(({ icon, label, value }) => (
@@ -298,69 +801,104 @@ export default function CourseProfile() {
           </div>
         </div>
 
-        {/* Semester Offerings */}
+        {/* Semester Offerings Card */}
         <div className="sp-card">
           <div className="sp-card-header">
             <span className="sp-card-icon green">
               <Calendar size={20} />
             </span>
-            <h3>Semester Offerings</h3>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flex: 1,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Semester Offerings</h3>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#059669",
+                  background: "#d1fae5",
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                }}
+              >
+                {offerings.length} Total
+              </span>
+            </div>
           </div>
           {offerings.length === 0 ? (
-            <p className="text-muted" style={{ padding: "1rem" }}>
-              No semester offerings recorded.
-            </p>
+            <div
+              style={{
+                padding: "2rem",
+                textAlign: "center",
+                color: "var(--text-muted)",
+              }}
+            >
+              <Calendar
+                size={32}
+                style={{ opacity: 0.3, marginBottom: "8px", margin: "0 auto" }}
+              />
+              <p style={{ margin: 0, fontSize: "14px" }}>
+                No semester offerings recorded yet.
+              </p>
+            </div>
           ) : (
-            <>
-              <div className="sp-stats-row">
-                <div className="sp-stat">
-                  <span className="sp-stat-value">{offerings.length}</span>
-                  <span className="sp-stat-label">Offerings</span>
-                </div>
-                <div className="sp-stat">
-                  <span className="sp-stat-value">{course.credit_hours}</span>
-                  <span className="sp-stat-label">Credit Hrs</span>
-                </div>
-                <div className="sp-stat">
-                  <span className="sp-stat-value">{totalStudents}</span>
-                  <span className="sp-stat-label">Students Graded</span>
-                </div>
-              </div>
-              <div className="sp-semester-list">
-                {offerings.map((c) => (
-                  <div
-                    className="sp-semester-row"
-                    key={c.semester_course_id}
-                    onClick={() =>
-                      navigate(
-                        `/course-results?semester=${c.metadata_id}&course=${c.semester_course_id}`,
-                      )
-                    }
-                  >
-                    <div>
-                      <span className="sp-semester-name">
-                        {c.semester} — {c.session}
-                      </span>
-                      {c.teacher_name && (
-                        <div
-                          className="text-muted"
-                          style={{
-                            fontSize: "12px",
-                            marginTop: "2px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <User size={12} /> {c.teacher_name}
-                        </div>
-                      )}
-                    </div>
-                    <span className="grade-badge">View Results</span>
+            <div className="sp-semester-list">
+              {offerings.map((c) => (
+                <div
+                  className="sp-semester-row"
+                  key={c.semester_course_id}
+                  onClick={() =>
+                    navigate(
+                      `/course-results?semester=${c.metadata_id}&course=${c.semester_course_id}`,
+                    )
+                  }
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 14px",
+                    borderRadius: "10px",
+                    transition: "background 0.15s ease, transform 0.15s ease",
+                  }}
+                >
+                  <div>
+                    <span className="sp-semester-name" style={{ fontWeight: 600 }}>
+                      {c.semester} — {c.session}
+                    </span>
+                    {c.teacher_name && (
+                      <div
+                        className="text-muted"
+                        style={{
+                          fontSize: "12px",
+                          marginTop: "3px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <User size={12} />
+                        <span>{c.teacher_name}</span>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </>
+                  <span
+                    className="grade-badge"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    View Results <ArrowRight size={12} />
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -371,7 +909,25 @@ export default function CourseProfile() {
               <span className="sp-card-icon blue">
                 <Award size={20} />
               </span>
-              <h3>Grade Distribution</h3>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Grade Distribution</h3>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {totalStudents} Graded Submissions
+                </span>
+              </div>
             </div>
             <div className="grade-dist-layout" style={{ alignItems: "center" }}>
               <div
@@ -394,7 +950,7 @@ export default function CourseProfile() {
                     />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 13, fontWeight: 600 }}
+                      tick={{ fontSize: 13, fontWeight: 700 }}
                       axisLine={{ stroke: "#e2e8f0" }}
                       tickLine={false}
                     />
@@ -405,14 +961,18 @@ export default function CourseProfile() {
                       tickLine={false}
                     />
                     <Tooltip
-                      formatter={(val) => [`${val} students`, "Count"]}
+                      formatter={(val) => [
+                        `${val} students (${((val / (totalStudents || 1)) * 100).toFixed(1)}%)`,
+                        "Count",
+                      ]}
                       contentStyle={{
-                        borderRadius: "8px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        borderRadius: "10px",
+                        boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
                         border: "1px solid #e2e8f0",
+                        fontSize: "13px",
                       }}
                     />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={44}>
                       {gradeData.map((entry) => (
                         <Cell
                           key={entry.name}
@@ -435,15 +995,19 @@ export default function CourseProfile() {
                         background: GRADE_COLORS[entry.name] || "#94a3b8",
                       }}
                     />
-                    <span className="grade-dist-name">{entry.name}</span>
+                    <span className="grade-dist-name" style={{ fontWeight: 700 }}>
+                      {entry.name}
+                    </span>
                     <span className="grade-dist-range">
                       {gradeRanges[entry.name]
-                        ? `${gradeRanges[entry.name]}`
+                        ? `${gradeRanges[entry.name]} marks`
                         : ""}
                     </span>
                     <span className="grade-dist-count">
                       {entry.value}{" "}
-                      <span className="grade-dist-count-label">students</span>
+                      <span className="grade-dist-count-label">
+                        ({((entry.value / (totalStudents || 1)) * 100).toFixed(0)}%)
+                      </span>
                     </span>
                   </div>
                 ))}
@@ -465,7 +1029,25 @@ export default function CourseProfile() {
               >
                 <Trophy size={20} />
               </span>
-              <h3>Top 3 Performers</h3>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Top Performers</h3>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "#d97706",
+                  }}
+                >
+                  Highest Academic Scores
+                </span>
+              </div>
             </div>
             <div className="sp-semester-list">
               {topPerformers.map((student, idx) => {
@@ -475,18 +1057,21 @@ export default function CourseProfile() {
                     color: "#b45309",
                     bg: "#fef3c7",
                     border: "#fcd34d",
+                    icon: "🥇",
                   },
                   {
                     label: "2nd",
                     color: "#475569",
                     bg: "#f1f5f9",
                     border: "#cbd5e1",
+                    icon: "🥈",
                   },
                   {
                     label: "3rd",
                     color: "#9a3412",
                     bg: "#ffedd5",
                     border: "#fdba74",
+                    icon: "🥉",
                   },
                 ];
                 const badge = rankBadges[idx] || {
@@ -494,6 +1079,7 @@ export default function CourseProfile() {
                   color: "#64748b",
                   bg: "#f8fafc",
                   border: "#e2e8f0",
+                  icon: "⭐",
                 };
 
                 return (
@@ -501,19 +1087,24 @@ export default function CourseProfile() {
                     className="sp-semester-row"
                     key={`${student.roll_no}-${student.semester_course_id || idx}`}
                     onClick={() => navigate(`/students/${student.roll_no}`)}
-                    style={{ alignItems: "center" }}
+                    style={{
+                      alignItems: "center",
+                      padding: "14px 16px",
+                      borderRadius: "12px",
+                      transition: "transform 0.15s ease, background 0.15s ease",
+                    }}
                   >
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "12px",
+                        gap: "14px",
                       }}
                     >
                       <span
                         style={{
-                          width: "32px",
-                          height: "32px",
+                          width: "36px",
+                          height: "36px",
                           borderRadius: "50%",
                           background: badge.bg,
                           color: badge.color,
@@ -521,33 +1112,48 @@ export default function CourseProfile() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: "12px",
+                          fontWeight: 800,
+                          fontSize: "13px",
                           flexShrink: 0,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                         }}
                       >
                         {badge.label}
                       </span>
                       <div>
-                        <span className="sp-semester-name">
+                        <span
+                          className="sp-semester-name"
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "14px",
+                            color: "var(--text)",
+                          }}
+                        >
                           {student.student_name ||
                             student.name ||
                             student.roll_no}
                         </span>
                         <div
                           className="text-muted"
-                          style={{ fontSize: "12px", marginTop: "2px" }}
+                          style={{
+                            fontSize: "12px",
+                            marginTop: "2px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
                         >
-                          {student.roll_no}
-                          {student.semester && ` • ${student.semester}`}
+                          <code>{student.roll_no}</code>
+                          {student.semester && <span>• {student.semester}</span>}
+                          {student.session && <span>({student.session})</span>}
                         </div>
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div
                         style={{
-                          fontWeight: 700,
-                          fontSize: "14px",
+                          fontWeight: 800,
+                          fontSize: "15px",
                           color: "var(--text)",
                         }}
                       >
@@ -566,9 +1172,13 @@ export default function CourseProfile() {
                       {student.letter_grade && (
                         <span
                           className={`grade-badge grade-${student.letter_grade.toLowerCase().replace("+", "-plus")}`}
-                          style={{ marginTop: "3px", display: "inline-block" }}
+                          style={{
+                            marginTop: "3px",
+                            display: "inline-block",
+                            fontWeight: 700,
+                          }}
                         >
-                          {student.letter_grade}
+                          Grade {student.letter_grade}
                         </span>
                       )}
                     </div>
@@ -576,6 +1186,365 @@ export default function CourseProfile() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Textbooks */}
+        {hasTextbooks && (
+          <div className={`sp-card ${!hasReferenceMaterials ? "sp-card-full" : ""}`}>
+            <div className="sp-card-header">
+              <span className="sp-card-icon blue">
+                <BookMarked size={20} />
+              </span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Required Textbooks</h3>
+                {Array.isArray(textbooks) && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#2563eb",
+                      background: "#eff6ff",
+                      padding: "2px 8px",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {textbooks.length} {textbooks.length === 1 ? "Book" : "Books"}
+                  </span>
+                )}
+              </div>
+            </div>
+            {renderBookCards(textbooks, "#2563eb", "#eff6ff")}
+          </div>
+        )}
+
+        {/* Reference Materials */}
+        {hasReferenceMaterials && (
+          <div className={`sp-card ${!hasTextbooks ? "sp-card-full" : ""}`}>
+            <div className="sp-card-header">
+              <span className="sp-card-icon green">
+                <Library size={20} />
+              </span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Reference Materials</h3>
+                {Array.isArray(referenceMaterials) && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#059669",
+                      background: "#d1fae5",
+                      padding: "2px 8px",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {referenceMaterials.length}{" "}
+                    {referenceMaterials.length === 1 ? "Book" : "Books"}
+                  </span>
+                )}
+              </div>
+            </div>
+            {renderBookCards(referenceMaterials, "#059669", "#ecfdf5")}
+          </div>
+        )}
+
+        {/* Course Outline / Syllabus / Description */}
+        {hasCourseDescription && (
+          <div className="sp-card sp-card-full">
+            <div className="sp-card-header">
+              <span
+                className="sp-card-icon"
+                style={{
+                  background: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+                  color: "#6d28d9",
+                }}
+              >
+                <Layers size={20} />
+              </span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flex: 1,
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0 }}>Course Outline & Syllabus</h3>
+                  <p
+                    style={{
+                      margin: "2px 0 0 0",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    Detailed topic breakdown and module units
+                  </p>
+                </div>
+
+                {Array.isArray(courseDescription) && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        background: "#ede9fe",
+                        color: "#6d28d9",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        padding: "3px 10px",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      {courseDescription.length} Sections
+                    </span>
+                    <button
+                      type="button"
+                      onClick={toggleAllSections}
+                      style={{
+                        background: "none",
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        padding: "3px 8px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {isAllExpanded ? "Collapse All" : "Expand All"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Search Filter for Outline */}
+            {Array.isArray(courseDescription) && courseDescription.length > 3 && (
+              <div
+                style={{
+                  position: "relative",
+                  marginBottom: "16px",
+                }}
+              >
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-muted)",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search topics or modules (e.g. pointers, functions, arrays)..."
+                  value={topicSearch}
+                  onChange={(e) => setTopicSearch(e.target.value)}
+                  style={{
+                    paddingLeft: "36px",
+                    paddingRight: "30px",
+                    fontSize: "13px",
+                    background: "#f8fafc",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    width: "100%",
+                  }}
+                />
+                {topicSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setTopicSearch("")}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      fontSize: "14px",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      padding: "2px",
+                    }}
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
+            )}
+
+            {Array.isArray(filteredOutline) ? (
+              filteredOutline.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "1rem" }}>
+                  No modules or topics matching "{topicSearch}".
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {filteredOutline.map((section, sIdx) => {
+                    const heading =
+                      section.heading ||
+                      section.title ||
+                      section.name ||
+                      `Section ${sIdx + 1}`;
+                    const topics = Array.isArray(section.topics)
+                      ? section.topics
+                      : section.topics
+                        ? [section.topics]
+                        : [];
+                    const isExpanded =
+                      topicSearch.trim() !== "" || Boolean(expandedSections[sIdx]);
+
+                    return (
+                      <div
+                        key={sIdx}
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px solid var(--border)",
+                          borderRadius: "12px",
+                          overflow: "hidden",
+                          transition: "border-color 0.15s ease",
+                        }}
+                      >
+                        <div
+                          onClick={() => toggleSection(sIdx)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "14px 18px",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              flex: 1,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 800,
+                                color: "#4338ca",
+                                background: "#e0e7ff",
+                                padding: "2px 8px",
+                                borderRadius: "6px",
+                                flexShrink: 0,
+                              }}
+                            >
+                              #{sIdx + 1}
+                            </span>
+                            <h4
+                              style={{
+                                margin: 0,
+                                fontSize: "14px",
+                                fontWeight: 700,
+                                color: "var(--text, #1e293b)",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {heading}
+                            </h4>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {topics.length > 0 && (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: "var(--text-muted)",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {topics.length} {topics.length === 1 ? "topic" : "topics"}
+                              </span>
+                            )}
+                            {isExpanded ? (
+                              <ChevronUp size={16} style={{ color: "var(--text-muted)" }} />
+                            ) : (
+                              <ChevronDown size={16} style={{ color: "var(--text-muted)" }} />
+                            )}
+                          </div>
+                        </div>
+
+                        {isExpanded && topics.length > 0 && (
+                          <div
+                            style={{
+                              padding: "0 18px 16px 18px",
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "6px",
+                            }}
+                          >
+                            {topics.map((topic, tIdx) => (
+                              <span
+                                key={tIdx}
+                                style={{
+                                  fontSize: "12px",
+                                  background: "#ffffff",
+                                  border: "1px solid #e2e8f0",
+                                  color: "var(--text, #334155)",
+                                  padding: "4px 10px",
+                                  borderRadius: "6px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  lineHeight: 1.35,
+                                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: "5px",
+                                    height: "5px",
+                                    borderRadius: "50%",
+                                    background: "#6366f1",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                {topic}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              <div
+                style={{
+                  color: "var(--text)",
+                  lineHeight: 1.7,
+                  whiteSpace: "pre-line",
+                  fontSize: "14px",
+                }}
+              >
+                {typeof courseDescription === "string"
+                  ? courseDescription
+                  : JSON.stringify(courseDescription, null, 2)}
+              </div>
+            )}
           </div>
         )}
       </div>
