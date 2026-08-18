@@ -25,7 +25,21 @@ export default function Results() {
 
   const columns = [
     { key: "roll_no", label: "Roll No" },
-    { key: "name", label: "Name" },
+    {
+      key: "name",
+      label: "Name",
+      render: (val, row) => (
+        <button
+          className="btn-link"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/students/${row.roll_no}`);
+          }}
+        >
+          {val}
+        </button>
+      ),
+    },
     {
       key: "cgpa",
       label: "CGPA",
