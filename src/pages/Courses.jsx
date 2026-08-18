@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   getCourses,
@@ -21,6 +22,7 @@ const defaultForm = {
 
 export default function Courses() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -109,7 +111,21 @@ export default function Courses() {
   const columns = [
     { key: "metadata_id", label: "Semester" },
     { key: "course_code", label: "Code" },
-    { key: "course_name", label: "Course Name" },
+    {
+      key: "course_name",
+      label: "Course Name",
+      render: (val, row) => (
+        <button
+          className="btn-link"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/courses/${row.course_code}`);
+          }}
+        >
+          {val}
+        </button>
+      ),
+    },
     { key: "credit_hours", label: "Credit Hrs" },
     // { key: "department", label: "Department" },
     { key: "program", label: "Program" },

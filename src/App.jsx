@@ -21,6 +21,7 @@ import Timetable from "./pages/Timetable";
 import ExamSchedule from "./pages/ExamSchedule";
 import Track from "./pages/Track";
 import TeacherProfile from "./pages/TeacherProfile";
+import CourseProfile from "./pages/CourseProfile";
 import Contact from "./pages/Contact";
 import "./App.css";
 import { TableSortProvider } from "./context/TableSortContext";
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/teachers" element={<Teachers />} />
                 <Route path="/teachers/:teacherId" element={<TeacherProfile />} />
                 <Route path="/courses" element={<Courses />} />
+                <Route path="/courses/:courseCode" element={<CourseProfile />} />
                 <Route path="/grading-scale" element={<GradingScale />} />
                 <Route path="/semesters" element={<Semesters />} />
                 <Route

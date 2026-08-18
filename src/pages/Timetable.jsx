@@ -228,7 +228,25 @@ export default function Timetable() {
       label: "Code",
       render: (val) => <span className="cell-code">{val}</span>,
     },
-    { key: "course_name", label: "Course Name", sortable: true },
+    {
+      key: "course_name",
+      label: "Course Name",
+      sortable: true,
+      render: (val, row) => (
+        <span
+          style={{
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/courses/${row.course_code}`);
+          }}
+        >
+          {val}
+        </span>
+      ),
+    },
     {
       key: "session_type",
       label: "Type",
@@ -251,7 +269,7 @@ export default function Timetable() {
           onClick={() => navigate(`/teachers/${row.teacher_id}`)}
           style={{
             cursor: "pointer",
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           {val}

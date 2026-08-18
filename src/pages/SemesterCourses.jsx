@@ -93,7 +93,24 @@ export default function SemesterCourses() {
 
   const columns = [
     { key: "course_code", label: "Code" },
-    { key: "course_name", label: "Course Name" },
+    {
+      key: "course_name",
+      label: "Course Name",
+      render: (val, row) => (
+        <span
+          style={{
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/courses/${row.course_code}`);
+          }}
+        >
+          {val}
+        </span>
+      ),
+    },
     { key: "credit_hours", label: "Credit Hrs" },
     {
       key: "teacher_name",
@@ -103,7 +120,7 @@ export default function SemesterCourses() {
           onClick={() => navigate(`/teachers/${row.teacher_id}`)}
           style={{
             cursor: "pointer",
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           {val}
