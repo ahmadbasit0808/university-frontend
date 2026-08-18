@@ -98,10 +98,7 @@ export default function SemesterCourses() {
       label: "Course Name",
       render: (val, row) => (
         <span
-          style={{
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="course-link"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/courses/${row.course_code}`);
@@ -118,10 +115,7 @@ export default function SemesterCourses() {
       render: (val, row) => (
         <span
           onClick={() => navigate(`/teachers/${row.teacher_id}`)}
-          style={{
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="course-link"
         >
           {val}
         </span>

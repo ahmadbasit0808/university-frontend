@@ -234,10 +234,7 @@ export default function Timetable() {
       sortable: true,
       render: (val, row) => (
         <span
-          style={{
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="course-link-2"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/courses/${row.course_code}`);
@@ -267,10 +264,7 @@ export default function Timetable() {
       render: (val, row) => (
         <span
           onClick={() => navigate(`/teachers/${row.teacher_id}`)}
-          style={{
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="course-link-2"
         >
           {val}
         </span>

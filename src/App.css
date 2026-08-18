@@ -1076,6 +1076,27 @@
    QUICK LINKS
    ============================ */
 
+.course-link {
+  cursor: pointer;
+  font-weight: 400;
+  transition: text-decoration 0.15s ease;
+}
+
+.course-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.course-link-2 {
+  cursor: pointer;
+  transition: text-decoration 0.15s ease;
+}
+
+.course-link-2:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .quick-links {
   margin-top: 8px;
 }
