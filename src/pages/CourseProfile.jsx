@@ -641,32 +641,34 @@ export default function CourseProfile() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: "20px",
+            gap: "16px",
             flexWrap: "wrap",
           }}
         >
-          <div style={{ flex: 1, minWidth: "280px" }}>
+          <div style={{ flex: "1 1 200px", minWidth: "0" }}>
             <h1
               style={{
-                fontSize: "28px",
+                fontSize: "26px",
                 fontWeight: 800,
                 color: "var(--text)",
                 margin: 0,
                 lineHeight: 1.25,
                 letterSpacing: "-0.02em",
+                wordBreak: "break-word",
               }}
             >
               {course.course_name}
             </h1>
           </div>
 
-          {/* Quick Stats Pill */}
+          {/* Quick Stats Grid */}
           <div
             style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "center",
-              flexWrap: "wrap",
+              display: "grid",
+              gridTemplateColumns: avgMarks != null ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
+              gap: "8px",
+              flex: "1 1 auto",
+              maxWidth: "100%",
             }}
           >
             <div
@@ -674,15 +676,18 @@ export default function CourseProfile() {
                 background: "#ffffff",
                 border: "1px solid var(--border)",
                 borderRadius: "12px",
-                padding: "12px 18px",
+                padding: "10px 14px",
                 textAlign: "center",
-                minWidth: "100px",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
-                  fontSize: "20px",
+                  fontSize: "18px",
                   fontWeight: 800,
                   color: "var(--text)",
                   lineHeight: 1.1,
@@ -692,12 +697,13 @@ export default function CourseProfile() {
               </div>
               <div
                 style={{
-                  fontSize: "11px",
-                  fontWeight: 600,
+                  fontSize: "10px",
+                  fontWeight: 700,
                   color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
-                  marginTop: "2px",
+                  marginTop: "3px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 Offerings
@@ -709,15 +715,18 @@ export default function CourseProfile() {
                 background: "#ffffff",
                 border: "1px solid var(--border)",
                 borderRadius: "12px",
-                padding: "12px 18px",
+                padding: "10px 14px",
                 textAlign: "center",
-                minWidth: "100px",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
-                  fontSize: "20px",
+                  fontSize: "18px",
                   fontWeight: 800,
                   color: "var(--text)",
                   lineHeight: 1.1,
@@ -727,12 +736,13 @@ export default function CourseProfile() {
               </div>
               <div
                 style={{
-                  fontSize: "11px",
-                  fontWeight: 600,
+                  fontSize: "10px",
+                  fontWeight: 700,
                   color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
-                  marginTop: "2px",
+                  marginTop: "3px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 Students
@@ -745,15 +755,18 @@ export default function CourseProfile() {
                   background: "#ffffff",
                   border: "1px solid var(--border)",
                   borderRadius: "12px",
-                  padding: "12px 18px",
+                  padding: "10px 14px",
                   textAlign: "center",
-                  minWidth: "100px",
                   boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <div
                   style={{
-                    fontSize: "20px",
+                    fontSize: "18px",
                     fontWeight: 800,
                     color: "#059669",
                     lineHeight: 1.1,
@@ -763,12 +776,13 @@ export default function CourseProfile() {
                 </div>
                 <div
                   style={{
-                    fontSize: "11px",
-                    fontWeight: 600,
+                    fontSize: "10px",
+                    fontWeight: 700,
                     color: "var(--text-muted)",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    marginTop: "2px",
+                    marginTop: "3px",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Avg Score
@@ -1035,6 +1049,8 @@ export default function CourseProfile() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   flex: 1,
+                  flexWrap: "wrap",
+                  gap: "8px",
                 }}
               >
                 <h3 style={{ margin: 0 }}>Top Performers</h3>
@@ -1049,7 +1065,7 @@ export default function CourseProfile() {
                 </span>
               </div>
             </div>
-            <div className="sp-semester-list">
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {topPerformers.map((student, idx) => {
                 const rankBadges = [
                   {
@@ -1057,21 +1073,18 @@ export default function CourseProfile() {
                     color: "#b45309",
                     bg: "#fef3c7",
                     border: "#fcd34d",
-                    icon: "🥇",
                   },
                   {
                     label: "2nd",
                     color: "#475569",
                     bg: "#f1f5f9",
                     border: "#cbd5e1",
-                    icon: "🥈",
                   },
                   {
                     label: "3rd",
                     color: "#9a3412",
                     bg: "#ffedd5",
                     border: "#fdba74",
-                    icon: "🥉",
                   },
                 ];
                 const badge = rankBadges[idx] || {
@@ -1079,26 +1092,44 @@ export default function CourseProfile() {
                   color: "#64748b",
                   bg: "#f8fafc",
                   border: "#e2e8f0",
-                  icon: "⭐",
                 };
 
                 return (
                   <div
-                    className="sp-semester-row"
                     key={`${student.roll_no}-${student.semester_course_id || idx}`}
                     onClick={() => navigate(`/students/${student.roll_no}`)}
                     style={{
+                      display: "flex",
                       alignItems: "center",
-                      padding: "14px 16px",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                      padding: "12px 16px",
+                      background: "#f8fafc",
+                      border: "1px solid var(--border)",
                       borderRadius: "12px",
-                      transition: "transform 0.15s ease, background 0.15s ease",
+                      cursor: "pointer",
+                      flexWrap: "nowrap",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "var(--primary)";
+                      e.currentTarget.style.background = "#ffffff";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "var(--border)";
+                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
+                    {/* Left: Rank Badge & Student Details */}
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "14px",
+                        gap: "12px",
+                        minWidth: 0,
+                        flex: "1 1 auto",
                       }}
                     >
                       <span
@@ -1113,72 +1144,83 @@ export default function CourseProfile() {
                           alignItems: "center",
                           justifyContent: "center",
                           fontWeight: 800,
-                          fontSize: "13px",
+                          fontSize: "12px",
                           flexShrink: 0,
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                         }}
                       >
                         {badge.label}
                       </span>
-                      <div>
-                        <span
-                          className="sp-semester-name"
+                      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <div
                           style={{
                             fontWeight: 700,
                             fontSize: "14px",
                             color: "var(--text)",
+                            lineHeight: 1.25,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {student.student_name ||
                             student.name ||
                             student.roll_no}
-                        </span>
+                        </div>
                         <div
-                          className="text-muted"
                           style={{
                             fontSize: "12px",
-                            marginTop: "2px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
+                            color: "var(--text-muted)",
+                            lineHeight: 1.25,
                           }}
                         >
                           <code>{student.roll_no}</code>
-                          {student.semester && <span>• {student.semester}</span>}
-                          {student.session && <span>({student.session})</span>}
                         </div>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          fontSize: "15px",
-                          color: "var(--text)",
-                        }}
-                      >
-                        {student.marks_obtained}
-                        <span
+
+                    {/* Right: Marks & Grade Badge */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        flexShrink: 0,
+                        textAlign: "right",
+                      }}
+                    >
+                      <div>
+                        <div
                           style={{
-                            fontSize: "11px",
-                            color: "var(--text-muted)",
-                            fontWeight: 500,
+                            fontWeight: 800,
+                            fontSize: "15px",
+                            color: "var(--text)",
+                            lineHeight: 1.1,
                           }}
                         >
-                          {" "}
-                          / 100
-                        </span>
+                          {student.marks_obtained}
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {" "}
+                            / 100
+                          </span>
+                        </div>
                       </div>
                       {student.letter_grade && (
                         <span
                           className={`grade-badge grade-${student.letter_grade.toLowerCase().replace("+", "-plus")}`}
                           style={{
-                            marginTop: "3px",
-                            display: "inline-block",
                             fontWeight: 700,
+                            fontSize: "12px",
+                            padding: "3px 8px",
+                            borderRadius: "6px",
                           }}
                         >
-                          Grade {student.letter_grade}
+                          {student.letter_grade}
                         </span>
                       )}
                     </div>
