@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCourse } from "../api/courses";
+import { getCourse, getCourses } from "../api/courses";
 import { getSemesters, getSemesterCourses } from "../api/semesters";
 import { getCourseResults } from "../api/courseResults";
 import { getGradingScales } from "../api/gradingScale";
@@ -15,6 +15,7 @@ import {
   Hash,
   User,
   Trophy,
+  GitFork,
 } from "lucide-react";
 import {
   BarChart,
@@ -46,6 +47,7 @@ export default function CourseProfile() {
   const navigate = useNavigate();
   const chartHeight = window.innerWidth <= 768 ? 260 : 300;
   const [course, setCourse] = useState(null);
+  const [allCoursesList, setAllCoursesList] = useState([]);
   const [offerings, setOfferings] = useState([]);
   const [topPerformers, setTopPerformers] = useState([]);
   const [gradeData, setGradeData] = useState([]);
@@ -57,11 +59,15 @@ export default function CourseProfile() {
   useEffect(() => {
     const load = async () => {
       try {
-        const courseRes = await getCourse(courseCode);
+        const [courseRes, coursesListRes, semRes] = await Promise.all([
+          getCourse(courseCode),
+          getCourses().catch(() => ({ data: [] })),
+          getSemesters(),
+        ]);
         setCourse(courseRes.data);
+        setAllCoursesList(coursesListRes.data || []);
 
         // Fetch all semesters then their courses, filter by this course_code
-        const semRes = await getSemesters();
         const allCourses = (
           await Promise.all(
             semRes.data.map((s) =>
@@ -167,16 +173,43 @@ export default function CourseProfile() {
     );
   if (!course) return null;
 
+  const prerequisite =
+    course.prerequisite ||
+    course.prerequisites ||
+    course.prerequisite_course ||
+    course.prereq;
+
+  const hasPrerequisite =
+    prerequisite != null &&
+    (typeof prerequisite === "string"
+      ? prerequisite.trim() !== "" &&
+      !["none", "null", "n/a", "nil", "—", "-", "no"].includes(
+        prerequisite.trim().toLowerCase(),
+      )
+      : Boolean(prerequisite));
+
+  const prerequisiteStr = hasPrerequisite ? String(prerequisite).trim() : "";
+
+  const matchedCourse = allCoursesList.find(
+    (c) =>
+      c.course_code?.trim().toLowerCase() === prerequisiteStr.toLowerCase() ||
+      c.course_name?.trim().toLowerCase() === prerequisiteStr.toLowerCase(),
+  );
+
+  const prerequisiteCourseName =
+    matchedCourse?.course_name ||
+    course.prerequisite_name ||
+    prerequisiteStr;
+
+  const prerequisiteCourseCode =
+    matchedCourse?.course_code ||
+    prerequisiteStr;
+
   const infoItems = [
     {
       icon: <Hash size={16} />,
       label: "Course Code",
       value: course.course_code,
-    },
-    {
-      icon: <Clock size={16} />,
-      label: "Credit Hours",
-      value: `${course.credit_hours} Cr.`,
     },
     {
       icon: <Building2 size={16} />,
@@ -188,6 +221,38 @@ export default function CourseProfile() {
       label: "Program",
       value: course.program || "—",
     },
+    ...(hasPrerequisite
+      ? [
+        {
+          icon: <GitFork size={16} />,
+          label: "Prerequisite",
+          value: (
+            <button
+              type="button"
+              className="btn-link"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                fontWeight: 600,
+                fontSize: "13px",
+                padding: 0,
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                color: "#d97706",
+              }}
+              onClick={() =>
+                navigate(`/courses/${encodeURIComponent(prerequisiteCourseCode)}`)
+              }
+              title={`View course ${prerequisiteCourseName}`}
+            >
+              {prerequisiteCourseName} &rarr;
+            </button>
+          ),
+        },
+      ]
+      : []),
   ];
 
   return (
@@ -308,10 +373,7 @@ export default function CourseProfile() {
               </span>
               <h3>Grade Distribution</h3>
             </div>
-            <div
-              className="grade-dist-layout"
-              style={{ alignItems: "center" }}
-            >
+            <div className="grade-dist-layout" style={{ alignItems: "center" }}>
               <div
                 className="grade-dist-chart"
                 style={{
@@ -350,11 +412,7 @@ export default function CourseProfile() {
                         border: "1px solid #e2e8f0",
                       }}
                     />
-                    <Bar
-                      dataKey="value"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
-                    >
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
                       {gradeData.map((entry) => (
                         <Cell
                           key={entry.name}
@@ -365,7 +423,10 @@ export default function CourseProfile() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grade-dist-legend" style={{ alignSelf: "center" }}>
+              <div
+                className="grade-dist-legend"
+                style={{ alignSelf: "center" }}
+              >
                 {gradeData.map((entry) => (
                   <div key={entry.name} className="grade-dist-legend-item">
                     <span
