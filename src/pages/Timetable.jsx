@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getSemesters } from "../api/semesters";
+import { useNavigate } from "react-router-dom";
 import {
   getLatestTimetable,
   getSemesterTimetable,
@@ -55,7 +56,7 @@ export default function Timetable() {
   const [error, setError] = useState("");
   const [metadataId, setMetadataId] = useState(null);
   const [latestSemesterUrl, setLatestSemesterUrl] = useState("");
-
+  const navigate = useNavigate();
   const [isLatest, setIsLatest] = useState(true);
 
   // today | all | day
@@ -241,7 +242,22 @@ export default function Timetable() {
         </span>
       ),
     },
-    { key: "teacher_name", label: "Teacher", sortable: true },
+    {
+      key: "teacher_name",
+      label: "Teacher",
+      sortable: true,
+      render: (val, row) => (
+        <span
+          onClick={() => navigate(`/teachers/${row.teacher_id}`)}
+          style={{
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+        >
+          {val}
+        </span>
+      ),
+    },
     {
       key: "day_order",
       label: "Day",
@@ -405,7 +421,9 @@ export default function Timetable() {
         loading={loading}
         defaultSortKey="day_order"
         defaultSortDir="asc"
-        rowClassName={(row) => (isLatest && isCurrentLecture(row) ? "current-lecture" : "")}
+        rowClassName={(row) =>
+          isLatest && isCurrentLecture(row) ? "current-lecture" : ""
+        }
         tableId="timetable"
         cardAccent="#d744e7"
       />

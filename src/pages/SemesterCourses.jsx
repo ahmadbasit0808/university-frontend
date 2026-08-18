@@ -95,7 +95,21 @@ export default function SemesterCourses() {
     { key: "course_code", label: "Code" },
     { key: "course_name", label: "Course Name" },
     { key: "credit_hours", label: "Credit Hrs" },
-    { key: "teacher_name", label: "Teacher", render: (val) => val || "—" },
+    {
+      key: "teacher_name",
+      label: "Teacher",
+      render: (val, row) => (
+        <span
+          onClick={() => navigate(`/teachers/${row.teacher_id}`)}
+          style={{
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+        >
+          {val}
+        </span>
+      ),
+    },
   ];
 
   return (
