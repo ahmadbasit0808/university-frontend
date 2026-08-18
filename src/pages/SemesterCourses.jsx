@@ -102,12 +102,21 @@ export default function SemesterCourses() {
     <div className="page">
       <div className="page-header">
         <div>
-          <button onClick={() => navigate(-1)} className="back-link" style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <button
+            onClick={() => navigate(-1)}
+            className="back-link"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
             &larr; Back
           </button>
           <h1>
             {semester
-              ? `${semester.semester} Semester (${semester.session})`
+              ? `${semester.semester} (${semester.session})`
               : "Semester Courses"}
           </h1>
         </div>
