@@ -3855,64 +3855,58 @@
 
   .course-hero-title {
     font-size: 20px;
-
-    te .course-hero-stats {
-      width: 100%;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-    }
-
-    .course-hero-stat-box {
-      padding: 8px 4px;
-      min-width: 0;
-    }
-
-    .sp-grid {
-      grid-template-columns: 100%;
-      gap: 16px;
-      width: 100%;
-    }
-
-    .sp-card {
-      padding: 16px;
-      width: 100%;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .sp-info-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .sp-info-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      flex-shrink: 0;
-    }
-
-    .sp-info-value {
-      font-size: 13px;
-      text-align: right;
-      max-width: 55%;
-      word-break: break-word;
-      white-space: normal;
-    }
   }
 
-  .top-scorer-score {
+  .course-hero-stats {
+    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .course-hero-stat-box {
+    padding: 8px 4px;
+    min-width: 0;
+  }
+
+  .sp-grid {
+    grid-template-columns: 100%;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .sp-card {
+    padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .sp-info-item {
     display: flex;
+    justify-content: space-between;
+    gap: 6px;
     align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-    text-align: right;
   }
 
-  @media (max-width: 600px) {
-    .top-scorer-score .grade-badge {
-      display: none !important;
-    }
+  .sp-info-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
   }
+
+  .sp-info-value {
+    font-size: 13px;
+    text-align: right;
+    max-width: 55%;
+    word-break: break-word;
+    white-space: normal;
+  }
+}
+
+.top-scorer-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }

@@ -1113,14 +1113,24 @@ export default function CourseProfile() {
                       </div>
                     </div>
 
-                    {/* Right: Marks & Grade Badge */}
-                    <div className="top-scorer-score">
+                    {/* Right: Marks & Grade Badge (in 1 line) */}
+                    <div
+                      className="top-scorer-score"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       <div
                         style={{
                           fontWeight: 800,
-                          fontSize: "15px",
+                          fontSize: "14px",
                           color: "var(--text)",
-                          lineHeight: 1.1,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {student.marks_obtained}
@@ -1143,6 +1153,9 @@ export default function CourseProfile() {
                             fontSize: "12px",
                             padding: "2px 8px",
                             borderRadius: "6px",
+                            whiteSpace: "nowrap",
+                            display: "inline-flex",
+                            alignItems: "center",
                           }}
                         >
                           {student.letter_grade}
