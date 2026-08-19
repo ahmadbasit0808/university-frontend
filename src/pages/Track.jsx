@@ -51,8 +51,8 @@ export default function Track() {
       <h1>Track Students</h1>
 
       <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
-        Add students to track — their rows will be highlighted in green across
-        all result pages.
+        Add students to track — their rows will be highlighted and their class
+        position/rank badge will be displayed next to their name across result pages.
       </p>
 
       <div className="track-page-card">

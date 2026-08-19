@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSemesterResults, publishSemesterResults } from "../api/results";
 import { getSemester } from "../api/semesters";
 import DataTable from "../components/common/DataTable";
 import { useStudentLookup } from "../context/StudentContext";
 import { useAuth } from "../context/AuthContext";
+import RankBadge, { computeRankMap } from "../components/common/RankBadge";
 
 export default function SemesterResults() {
   const { isAuthenticated } = useAuth();
@@ -62,9 +63,24 @@ export default function SemesterResults() {
     }
   };
 
+  const rankMap = useMemo(() => computeRankMap(results, "gpa"), [results]);
+
   const columns = [
     { key: "roll_no", label: "Roll No" },
-    { key: "name", label: "Name" },
+    {
+      key: "name",
+      label: "Name",
+      render: (val, row) => {
+        const isTracked = trackedRollNos.includes(String(row.roll_no));
+        const rank = isTracked ? rankMap.get(String(row.roll_no)) : null;
+        return (
+          <span className="student-rank-cell">
+            <span className="student-name-text">{val || "—"}</span>
+            <RankBadge rank={rank} titlePrefix="Semester Position" />
+          </span>
+        );
+      },
+    },
     {
       key: "gpa",
       label: "GPA",

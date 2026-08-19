@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSemesters, getSemesterCourses } from "../api/semesters";
@@ -13,6 +13,7 @@ import Modal from "../components/common/Modal";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import Toast from "../components/common/Toast";
 import { useStudentLookup } from "../context/StudentContext";
+import RankBadge, { computeRankMap } from "../components/common/RankBadge";
 
 const TOTAL_MARKS = 100;
 
@@ -163,9 +164,27 @@ export default function CourseResultsPage() {
     }
   };
 
+  const rankMap = useMemo(
+    () => computeRankMap(results, "marks_obtained"),
+    [results],
+  );
+
   const columns = [
     { key: "roll_no", label: "Roll No" },
-    { key: "student_name", label: "Student" },
+    {
+      key: "student_name",
+      label: "Student",
+      render: (val, row) => {
+        const isTracked = trackedRollNos.includes(String(row.roll_no));
+        const rank = isTracked ? rankMap.get(String(row.roll_no)) : null;
+        return (
+          <span className="student-rank-cell">
+            <span className="student-name-text">{val || "—"}</span>
+            <RankBadge rank={rank} titlePrefix="Subject Position" />
+          </span>
+        );
+      },
+    },
     {
       key: "marks_obtained",
       label: "Marks",

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllCgpa } from "../api/results";
 import { getSemesters } from "../api/semesters";
 import DataTable from "../components/common/DataTable";
 import { useStudentLookup } from "../context/StudentContext";
+import RankBadge, { computeRankMap } from "../components/common/RankBadge";
 
 export default function Results() {
   const [cgpaData, setCgpaData] = useState([]);
@@ -23,22 +24,31 @@ export default function Results() {
       .finally(() => setLoading(false));
   }, []);
 
+  const rankMap = useMemo(() => computeRankMap(cgpaData, "cgpa"), [cgpaData]);
+
   const columns = [
     { key: "roll_no", label: "Roll No" },
     {
       key: "name",
       label: "Name",
-      render: (val, row) => (
-        <button
-          className="btn-link"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/students/${row.roll_no}`);
-          }}
-        >
-          {val}
-        </button>
-      ),
+      render: (val, row) => {
+        const isTracked = trackedRollNos.includes(String(row.roll_no));
+        const rank = isTracked ? rankMap.get(String(row.roll_no)) : null;
+        return (
+          <span className="student-rank-cell">
+            <button
+              className="btn-link"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/students/${row.roll_no}`);
+              }}
+            >
+              {val}
+            </button>
+            <RankBadge rank={rank} titlePrefix="CGPA Position" />
+          </span>
+        );
+      },
     },
     {
       key: "cgpa",
