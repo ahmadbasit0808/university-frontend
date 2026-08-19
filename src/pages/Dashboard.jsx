@@ -6,17 +6,28 @@ import { getCourses } from "../api/courses";
 import { getSemesters } from "../api/semesters";
 import {
   getDashboardTopStudents,
+  getSemesterTopStudents,
   getSemesterResults,
   setTopStudent,
   clearTopStudent,
 } from "../api/results";
-import { Trophy, Pencil, X, RotateCcw } from "lucide-react";
+import {
+  Trophy,
+  Pencil,
+  X,
+  RotateCcw,
+  ExternalLink,
+  ChevronRight,
+} from "lucide-react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { useAuth } from "../context/AuthContext"; // adjust to your actual auth source
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
+  const [semestersList, setSemestersList] = useState([]);
   const [latestSemester, setLatestSemester] = useState(null);
+  const [selectedSemesterId, setSelectedSemesterId] = useState("latest");
+  const [topStudentsLoading, setTopStudentsLoading] = useState(false);
   const [topStudents, setTopStudents] = useState({
     metadataId: null,
     cr: null,
@@ -30,10 +41,34 @@ export default function Dashboard() {
 
   const { isAuthenticated } = useAuth();
 
-  const loadTopStudents = () => {
-    getDashboardTopStudents()
-      .then((res) => setTopStudents(res.data))
-      .catch(() => { });
+  const loadTopStudents = async (semId = selectedSemesterId) => {
+    setTopStudentsLoading(true);
+    try {
+      if (!semId || semId === "latest") {
+        const res = await getDashboardTopStudents();
+        setTopStudents(res.data || { metadataId: null, cr: null, gr: null });
+      } else {
+        const res = await getSemesterTopStudents(semId);
+        setTopStudents({
+          metadataId: res.data?.metadataId || semId,
+          cr: res.data?.cr || null,
+          gr: res.data?.gr || null,
+        });
+      }
+    } catch {
+      setTopStudents({
+        metadataId: semId !== "latest" ? semId : null,
+        cr: null,
+        gr: null,
+      });
+    } finally {
+      setTopStudentsLoading(false);
+    }
+  };
+
+  const handleSelectSemester = (semId) => {
+    setSelectedSemesterId(semId);
+    loadTopStudents(semId);
   };
 
   useEffect(() => {
@@ -45,7 +80,13 @@ export default function Dashboard() {
           courses: courses.data.length,
           semesters: semesters.data.length,
         });
-        const sem = semesters.data;
+        const sem = semesters.data || [];
+        const sorted = [...sem].sort((a, b) => {
+          const nA = parseInt(a.semester) || 0;
+          const nB = parseInt(b.semester) || 0;
+          return nA - nB;
+        });
+        setSemestersList(sorted);
         if (sem.length > 0) {
           const latest = sem.reduce((a, b) => {
             const n = (s) => parseInt(s.semester) || 0;
@@ -56,15 +97,18 @@ export default function Dashboard() {
       })
       .catch(() => setError("Failed to load dashboard data"));
 
-    loadTopStudents();
+    loadTopStudents("latest");
   }, []);
 
   const openEditor = async (role) => {
-    if (!topStudents.metadataId) return;
+    const metaId =
+      topStudents.metadataId ||
+      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
+    if (!metaId) return;
     setEditingRole(role);
     try {
-      const res = await getSemesterResults(topStudents.metadataId);
-      let list = res.data;
+      const res = await getSemesterResults(metaId);
+      let list = res.data || [];
       // Filter candidates by gender for CR (males) and GR (females)
       if (role === "cr" || role === "gr") {
         try {
@@ -96,11 +140,14 @@ export default function Dashboard() {
   };
 
   const handlePick = async (rollNo) => {
-    if (!editingRole || !topStudents.metadataId) return;
+    const metaId =
+      topStudents.metadataId ||
+      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
+    if (!editingRole || !metaId) return;
     setSavingOverride(true);
     try {
-      await setTopStudent(topStudents.metadataId, rollNo, editingRole);
-      loadTopStudents();
+      await setTopStudent(metaId, rollNo, editingRole);
+      loadTopStudents(selectedSemesterId);
       closeEditor();
     } catch {
       setError(`Failed to set ${editingRole.toUpperCase()}`);
@@ -110,17 +157,28 @@ export default function Dashboard() {
   };
 
   const handleReset = async (role) => {
-    if (!topStudents.metadataId) return;
+    const metaId =
+      topStudents.metadataId ||
+      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
+    if (!metaId) return;
     setSavingOverride(true);
     try {
-      await clearTopStudent(topStudents.metadataId, role);
-      loadTopStudents();
+      await clearTopStudent(metaId, role);
+      loadTopStudents(selectedSemesterId);
     } catch {
       setError(`Failed to reset ${role.toUpperCase()}`);
     } finally {
       setSavingOverride(false);
     }
   };
+
+  const selectedSemObj = semestersList.find(
+    (s) => String(s.id) === String(selectedSemesterId),
+  );
+  const activeSemesterId =
+    selectedSemesterId !== "latest"
+      ? selectedSemesterId
+      : latestSemester?.id || topStudents.metadataId;
 
   const cards = [
     {
@@ -149,67 +207,72 @@ export default function Dashboard() {
     },
   ];
 
-  const renderCard = (role, data, badgeLabel, cardClass) => (
-    <div
-      className={`top-student-card ${cardClass} ${!data ? "empty" : ""}`}
-      style={{ position: "relative" }}
-    >
-      {isAuthenticated && topStudents.metadataId && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            display: "flex",
-            gap: 6,
-          }}
-        >
-          {data?.isOverride && (
+  const renderCard = (role, data, badgeLabel, cardClass) => {
+    const hasEditPermission =
+      isAuthenticated && (topStudents.metadataId || activeSemesterId);
+
+    return (
+      <div
+        className={`top-student-card ${cardClass} ${!data ? "empty" : ""}`}
+        style={{ position: "relative" }}
+      >
+        {hasEditPermission && (
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              display: "flex",
+              gap: 6,
+            }}
+          >
+            {data?.isOverride && (
+              <button
+                type="button"
+                title={`Reset ${badgeLabel} to computed GPA leader`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleReset(role);
+                }}
+                disabled={savingOverride}
+                className="icon-btn"
+              >
+                <RotateCcw size={14} />
+              </button>
+            )}
             <button
               type="button"
-              title={`Reset ${badgeLabel} to computed GPA leader`}
+              title={`Manually set ${badgeLabel}`}
               onClick={(e) => {
                 e.preventDefault();
-                handleReset(role);
+                openEditor(role);
               }}
-              disabled={savingOverride}
               className="icon-btn"
             >
-              <RotateCcw size={14} />
+              <Pencil size={14} />
             </button>
-          )}
-          <button
-            type="button"
-            title={`Manually set ${badgeLabel}`}
-            onClick={(e) => {
-              e.preventDefault();
-              openEditor(role);
-            }}
-            className="icon-btn"
-          >
-            <Pencil size={14} />
-          </button>
-        </div>
-      )}
-
-      <div className="top-student-badge">{badgeLabel}</div>
-
-      {data ? (
-        <Link
-          to={`/students/${data.roll_no}`}
-          style={{ textDecoration: "none", color: "inherit" }}
-        >
-          <div className="top-student-name">{data.name}</div>
-          <div className="top-student-roll">{data.roll_no}</div>
-          <div className="top-student-gpa">
-            GPA: <strong>{data.gpa}</strong>
           </div>
-        </Link>
-      ) : (
-        <div className="top-student-name">No data available</div>
-      )}
-    </div>
-  );
+        )}
+
+        <div className="top-student-badge">{badgeLabel}</div>
+
+        {data ? (
+          <Link
+            to={`/students/${data.roll_no}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <div className="top-student-name">{data.name}</div>
+            <div className="top-student-roll">{data.roll_no}</div>
+            <div className="top-student-gpa">
+              CGPA: <strong>{data.cgpa ?? data.gpa}</strong>
+            </div>
+          </Link>
+        ) : (
+          <div className="top-student-name">No data available</div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="page">
@@ -257,23 +320,59 @@ export default function Dashboard() {
       )}
 
       <div className="top-students-section">
-        <div className="icon-text">
-          <Trophy height={20} color="#ffbf00" />
-          <h2> Top Students (Latest Semester)</h2>
+        <div className="top-students-header">
+          <div className="top-students-title-wrap">
+            <div className="icon-text top-students-title">
+              <Trophy height={22} color="#ffbf00" />
+              <h2>Top Students</h2>
+            </div>
+            {latestSemester && (
+              <span className="top-students-section-badge">
+                {/semester/i.test(latestSemester.semester || "")
+                  ? latestSemester.semester.replace(/semester/i, "Semester")
+                  : `${latestSemester.semester} Semester`}
+              </span>
+            )}
+          </div>
+
+          <div className="top-students-controls">
+            <Link
+              to="/top-students"
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>Show Previous</span>
+              <ChevronRight size={15} />
+            </Link>
+          </div>
         </div>
-        <div className="top-students-grid">
-          {renderCard(
-            "cr",
-            topStudents.cr,
-            "CR (Class Representative)",
-            "cr-card",
+
+        <div className="top-students-grid-wrapper">
+          {topStudentsLoading && (
+            <div className="top-students-loading-overlay">
+              <LoadingSpinner />
+            </div>
           )}
-          {renderCard(
-            "gr",
-            topStudents.gr,
-            "GR (Girls Representative)",
-            "gr-card",
-          )}
+          <div className="top-students-grid">
+            {renderCard(
+              "cr",
+              topStudents.cr,
+              "CR (Class Representative)",
+              "cr-card",
+            )}
+            {renderCard(
+              "gr",
+              topStudents.gr,
+              "GR (Girls Representative)",
+              "gr-card",
+            )}
+          </div>
         </div>
       </div>
 

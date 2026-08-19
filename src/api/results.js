@@ -3,6 +3,8 @@ import api from "./axios";
 export const getAllCgpa = () => api.get("/results");
 export const getDashboardTopStudents = () =>
   api.get("/results/dashboard/top-students");
+export const getSemesterTopStudents = (semesterId) =>
+  api.get(`/results/dashboard/top-students/${semesterId}`);
 export const getTranscript = (rollNo) => api.get(`/results/${rollNo}`);
 export const getSemesterResults = (semesterId) =>
   api.get(`/results/semester/${semesterId}`);

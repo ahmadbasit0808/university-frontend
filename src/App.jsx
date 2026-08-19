@@ -16,6 +16,7 @@ import Transcript from "./pages/Transcript";
 import SemesterResults from "./pages/SemesterResults";
 import StudentSemesterResult from "./pages/StudentSemesterResult";
 import CourseResultsPage from "./pages/CourseResults";
+import TopStudents from "./pages/TopStudents";
 import ComponentBreakdown from "./pages/ComponentBreakdown";
 import Timetable from "./pages/Timetable";
 import ExamSchedule from "./pages/ExamSchedule";
@@ -36,6 +37,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/top-students" element={<TopStudents />} />
                 <Route path="/students" element={<Students />} />
                 <Route path="/students/:rollNo" element={<StudentProfile />} />
                 <Route path="/teachers" element={<Teachers />} />
