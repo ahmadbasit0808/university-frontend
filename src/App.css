@@ -578,7 +578,8 @@
     width: auto;
     max-height: 90vh;
     border-radius: 20px 20px 0 0;
-    transform: translateY(100%); /* slide from bottom, not -10px from top */
+    transform: translateY(100%);
+    /* slide from bottom, not -10px from top */
   }
 
   .notification-panel.open {
@@ -586,7 +587,8 @@
   }
 
   .notification-panel::before {
-    display: none; /* the little "speech bubble" arrow only makes sense for desktop popover */
+    display: none;
+    /* the little "speech bubble" arrow only makes sense for desktop popover */
   }
 
   .notification-bell {
@@ -1185,6 +1187,7 @@
 
 /* Compact table for transcript/student result on mobile */
 @media (max-width: 600px) {
+
   .table-wrapper table.data-table.compact-table th,
   .table-wrapper table.data-table.compact-table td {
     padding: 6px 4px;
@@ -1517,18 +1520,22 @@
   background: #059669;
   opacity: 0.7;
 }
+
 .semester-card-header.gpa-good::after {
   background: #2563eb;
   opacity: 0.7;
 }
+
 .semester-card-header.gpa-average::after {
   background: #d97706;
   opacity: 0.7;
 }
+
 .semester-card-header.gpa-below::after {
   background: #ea580c;
   opacity: 0.7;
 }
+
 .semester-card-header.gpa-poor::after {
   background: #dc2626;
   opacity: 0.7;
@@ -1824,6 +1831,13 @@
   color: var(--text);
   text-align: right;
   word-break: break-word;
+  margin-left: auto;
+}
+
+.data-card-value button,
+.data-card-value a,
+.data-card-value .btn-link {
+  text-align: right;
 }
 
 .data-card-actions {
@@ -2078,6 +2092,7 @@
   .sidebar-toggle {
     display: none;
   }
+
   .page-header {
     padding-right: 90px;
     align-items: center;
@@ -2326,7 +2341,7 @@
   gap: 12px;
 }
 
-.tracked-list-item > div {
+.tracked-list-item>div {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2337,7 +2352,7 @@
   width: auto !important;
 }
 
-.tracked-list-item > div {
+.tracked-list-item>div {
   min-width: 0;
 }
 
@@ -2499,12 +2514,15 @@
   gap: 10px;
   align-items: center;
   width: 100%;
-  min-width: 0; /* allow the group itself to shrink */
+  min-width: 0;
+  /* allow the group itself to shrink */
 }
+
 .contact-track-input-wrapper {
   position: relative;
   flex: 1;
-  min-width: 0; /* critical: lets input shrink instead of forcing overflow */
+  min-width: 0;
+  /* critical: lets input shrink instead of forcing overflow */
 }
 
 .contact-track-input-wrapper .contact-input-icon {
@@ -2718,11 +2736,13 @@
   transform: translateX(4px);
   color: var(--primary);
 }
+
 .contact-history-item .history-id,
 .contact-history-item .history-date {
   overflow-wrap: break-word;
   word-break: break-word;
 }
+
 /* Form Enhancements */
 .contact-input-group {
   position: relative;
@@ -2740,7 +2760,7 @@
   z-index: 1;
 }
 
-.contact-input-group textarea ~ .contact-input-icon {
+.contact-input-group textarea~.contact-input-icon {
   top: 16px;
   transform: none;
 }
@@ -2905,6 +2925,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -2915,6 +2936,7 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -2961,6 +2983,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -3346,6 +3369,7 @@
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
+  text-align: inherit;
 }
 
 .btn-link:hover {
@@ -3751,6 +3775,7 @@
 }
 
 @media (max-width: 520px) {
+
   .candidate-list-header,
   .candidate-row {
     grid-template-columns: 1fr 90px 60px;
@@ -3759,5 +3784,135 @@
 
   .candidate-roll {
     font-size: 12px;
+  }
+}
+
+/* ============================
+   COURSE HERO & PROFILE RESPONSIVE
+   ============================ */
+
+.course-hero-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 16px);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.course-hero-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.course-hero-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+.course-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.course-hero-stat-box {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .course-hero-card {
+    padding: 16px 14px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .course-hero-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .course-hero-title {
+    font-size: 20px;
+
+    te .course-hero-stats {
+      width: 100%;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .course-hero-stat-box {
+      padding: 8px 4px;
+      min-width: 0;
+    }
+
+    .sp-grid {
+      grid-template-columns: 100%;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .sp-card {
+      padding: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .sp-info-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .sp-info-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .sp-info-value {
+      font-size: 13px;
+      text-align: right;
+      max-width: 55%;
+      word-break: break-word;
+      white-space: normal;
+    }
+  }
+
+  .top-scorer-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  @media (max-width: 600px) {
+    .top-scorer-score .grade-badge {
+      display: none !important;
+    }
   }
 }

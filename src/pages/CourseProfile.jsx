@@ -399,14 +399,17 @@ export default function CourseProfile() {
                   alignItems: "center",
                   gap: "5px",
                   fontWeight: 600,
-                  fontSize: "13px",
-                  padding: "2px 8px",
+                  fontSize: "12px",
+                  padding: "3px 8px",
                   borderRadius: "6px",
                   background: "#fef3c7",
                   border: "1px solid #fde68a",
                   color: "#92400e",
                   cursor: "pointer",
                   textAlign: "right",
+                  maxWidth: "100%",
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
                 }}
                 onClick={() =>
                   navigate(
@@ -415,8 +418,10 @@ export default function CourseProfile() {
                 }
                 title={`View course ${prerequisiteCourseName}`}
               >
-                <span>{prerequisiteCourseName}</span>
-                <ArrowRight size={12} />
+                <span style={{ wordBreak: "break-word", textAlign: "right" }}>
+                  {prerequisiteCourseName}
+                </span>
+                <ArrowRight size={12} style={{ flexShrink: 0 }} />
               </button>
             ),
           },
@@ -588,17 +593,7 @@ export default function CourseProfile() {
   return (
     <div className="page">
       {/* Hero Header */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-lg, 16px)",
-          padding: "24px 28px",
-          marginBottom: "24px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+      <div className="course-hero-card">
         <div
           style={{
             position: "absolute",
@@ -612,7 +607,7 @@ export default function CourseProfile() {
           }}
         />
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
           <button
             onClick={() => navigate(-1)}
             style={{
@@ -636,55 +631,21 @@ export default function CourseProfile() {
           </button>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: "1 1 200px", minWidth: "0" }}>
-            <h1
-              style={{
-                fontSize: "26px",
-                fontWeight: 800,
-                color: "var(--text)",
-                margin: 0,
-                lineHeight: 1.25,
-                letterSpacing: "-0.02em",
-                wordBreak: "break-word",
-              }}
-            >
+        <div className="course-hero-content">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1 className="course-hero-title">
               {course.course_name}
             </h1>
           </div>
 
           {/* Quick Stats Grid */}
           <div
+            className="course-hero-stats"
             style={{
-              display: "grid",
               gridTemplateColumns: avgMarks != null ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
-              gap: "8px",
-              flex: "1 1 auto",
-              maxWidth: "100%",
             }}
           >
-            <div
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--border)",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                textAlign: "center",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div className="course-hero-stat-box">
               <div
                 style={{
                   fontSize: "18px",
@@ -710,20 +671,7 @@ export default function CourseProfile() {
               </div>
             </div>
 
-            <div
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--border)",
-                borderRadius: "12px",
-                padding: "10px 14px",
-                textAlign: "center",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div className="course-hero-stat-box">
               <div
                 style={{
                   fontSize: "18px",
@@ -750,20 +698,7 @@ export default function CourseProfile() {
             </div>
 
             {avgMarks != null && (
-              <div
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid var(--border)",
-                  borderRadius: "12px",
-                  padding: "10px 14px",
-                  textAlign: "center",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div className="course-hero-stat-box">
                 <div
                   style={{
                     fontSize: "18px",
@@ -1179,36 +1114,26 @@ export default function CourseProfile() {
                     </div>
 
                     {/* Right: Marks & Grade Badge */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        flexShrink: 0,
-                        textAlign: "right",
-                      }}
-                    >
-                      <div>
-                        <div
+                    <div className="top-scorer-score">
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: "15px",
+                          color: "var(--text)",
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {student.marks_obtained}
+                        <span
                           style={{
-                            fontWeight: 800,
-                            fontSize: "15px",
-                            color: "var(--text)",
-                            lineHeight: 1.1,
+                            fontSize: "11px",
+                            color: "var(--text-muted)",
+                            fontWeight: 500,
                           }}
                         >
-                          {student.marks_obtained}
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--text-muted)",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {" "}
-                            / 100
-                          </span>
-                        </div>
+                          {" "}
+                          / 100
+                        </span>
                       </div>
                       {student.letter_grade && (
                         <span
@@ -1216,7 +1141,7 @@ export default function CourseProfile() {
                           style={{
                             fontWeight: 700,
                             fontSize: "12px",
-                            padding: "3px 8px",
+                            padding: "2px 8px",
                             borderRadius: "6px",
                           }}
                         >
