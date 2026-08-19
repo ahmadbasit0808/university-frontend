@@ -3910,3 +3910,9 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+@media (max-width: 390px) {
+  .top-scorer-score .grade-badge {
+    display: none !important;
+  }
+}
