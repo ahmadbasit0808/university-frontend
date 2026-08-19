@@ -33,7 +33,7 @@ export default function Dashboard() {
   const loadTopStudents = () => {
     getDashboardTopStudents()
       .then((res) => setTopStudents(res.data))
-      .catch(() => {});
+      .catch(() => { });
   };
 
   useEffect(() => {
@@ -80,8 +80,10 @@ export default function Dashboard() {
           // fall back to full list if gender info is unavailable
         }
       }
-      // Sort candidates by GPA (highest first)
-      list = [...list].sort((a, b) => (b.gpa ?? 0) - (a.gpa ?? 0));
+      // Sort candidates by CGPA (highest first)
+      list = [...list].sort(
+        (a, b) => ((b.cgpa ?? b.gpa) ?? 0) - ((a.cgpa ?? a.gpa) ?? 0),
+      );
       setCandidates(list);
     } catch {
       setCandidates([]);
@@ -347,10 +349,10 @@ export default function Dashboard() {
                                 {s.name}
                                 {topStudents[editingRole]?.roll_no ===
                                   s.roll_no && (
-                                  <span className="candidate-current-tag">
-                                    current
-                                  </span>
-                                )}
+                                    <span className="candidate-current-tag">
+                                      current
+                                    </span>
+                                  )}
                               </span>
                               <span className="candidate-roll">
                                 {s.roll_no}

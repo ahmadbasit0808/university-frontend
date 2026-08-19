@@ -4,8 +4,10 @@ import { getSemesterResults, publishSemesterResults } from "../api/results";
 import { getSemester } from "../api/semesters";
 import DataTable from "../components/common/DataTable";
 import { useStudentLookup } from "../context/StudentContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function SemesterResults() {
+  const { isAuthenticated } = useAuth();
   const { semesterId } = useParams();
   const [results, setResults] = useState([]);
   const [semester, setSemester] = useState(null);
@@ -116,13 +118,15 @@ export default function SemesterResults() {
               : "Semester Results"}
           </h1>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={handlePublish}
-          disabled={publishing}
-        >
-          {publishing ? "Publishing..." : "Publish Results"}
-        </button>
+        {isAuthenticated && (
+          <button
+            className="btn btn-primary"
+            onClick={handlePublish}
+            disabled={publishing}
+          >
+            {publishing ? "Publishing..." : "Publish Results"}
+          </button>
+        )}
       </div>
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
