@@ -7,8 +7,21 @@ import { getNotifications } from "../api/notifications";
 
 const LAST_SEEN_KEY = "notifications_last_seen";
 
+const SIDEBAR_AUTO_OPENED_KEY = "sidebar_auto_opened";
+
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+    if (!isMobile) return true;
+
+    const hasAutoOpened = sessionStorage.getItem(SIDEBAR_AUTO_OPENED_KEY);
+    if (!hasAutoOpened) {
+      sessionStorage.setItem(SIDEBAR_AUTO_OPENED_KEY, "true");
+      return true;
+    }
+
+    return false;
+  });
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
