@@ -9,13 +9,11 @@ import {
   getSemesterTopStudents,
   getSemesterResults,
   setTopStudent,
-  clearTopStudent,
 } from "../api/results";
 import {
   Trophy,
   Pencil,
   X,
-  RotateCcw,
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
@@ -27,7 +25,7 @@ export default function Dashboard() {
   const [semestersList, setSemestersList] = useState([]);
   const [latestSemester, setLatestSemester] = useState(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState("latest");
-  const [topStudentsLoading, setTopStudentsLoading] = useState(false);
+  const [topStudentsLoading, setTopStudentsLoading] = useState(true);
   const [topStudents, setTopStudents] = useState({
     metadataId: null,
     cr: null,
@@ -156,22 +154,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleReset = async (role) => {
-    const metaId =
-      topStudents.metadataId ||
-      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
-    if (!metaId) return;
-    setSavingOverride(true);
-    try {
-      await clearTopStudent(metaId, role);
-      loadTopStudents(selectedSemesterId);
-    } catch {
-      setError(`Failed to reset ${role.toUpperCase()}`);
-    } finally {
-      setSavingOverride(false);
-    }
-  };
-
   const selectedSemObj = semestersList.find(
     (s) => String(s.id) === String(selectedSemesterId),
   );
@@ -226,20 +208,6 @@ export default function Dashboard() {
               gap: 6,
             }}
           >
-            {data?.isOverride && (
-              <button
-                type="button"
-                title={`Reset ${badgeLabel} to computed GPA leader`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleReset(role);
-                }}
-                disabled={savingOverride}
-                className="icon-btn"
-              >
-                <RotateCcw size={14} />
-              </button>
-            )}
             <button
               type="button"
               title={`Manually set ${badgeLabel}`}
@@ -296,26 +264,43 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {latestSemester && (
+      {(stats === null || latestSemester) && (
         <div className="latest-semester-section">
           <h2>Current Semester</h2>
-          <Link
-            to={`/semesters/${latestSemester.id}/courses`}
-            className="latest-semester-card"
-          >
-            <div className="ls-item">
-              <span className="ls-label">Semester</span>
-              <span className="ls-value">{latestSemester.semester}</span>
+          {stats === null ? (
+            <div className="latest-semester-card" style={{ cursor: "default" }}>
+              <div className="ls-item">
+                <span className="ls-label">Semester</span>
+                <div className="stat-skeleton" style={{ width: 80, height: 20, marginBottom: 0 }} />
+              </div>
+              <div className="ls-item">
+                <span className="ls-label">Session</span>
+                <div className="stat-skeleton" style={{ width: 100, height: 20, marginBottom: 0 }} />
+              </div>
+              <div className="ls-item">
+                <span className="ls-label">Program</span>
+                <div className="stat-skeleton" style={{ width: 90, height: 20, marginBottom: 0 }} />
+              </div>
             </div>
-            <div className="ls-item">
-              <span className="ls-label">Session</span>
-              <span className="ls-value">{latestSemester.session}</span>
-            </div>
-            <div className="ls-item">
-              <span className="ls-label">Program</span>
-              <span className="ls-value">{latestSemester.program}</span>
-            </div>
-          </Link>
+          ) : (
+            <Link
+              to={`/semesters/${latestSemester.id}/courses`}
+              className="latest-semester-card"
+            >
+              <div className="ls-item">
+                <span className="ls-label">Semester</span>
+                <span className="ls-value">{latestSemester.semester}</span>
+              </div>
+              <div className="ls-item">
+                <span className="ls-label">Session</span>
+                <span className="ls-value">{latestSemester.session}</span>
+              </div>
+              <div className="ls-item">
+                <span className="ls-label">Program</span>
+                <span className="ls-value">{latestSemester.program}</span>
+              </div>
+            </Link>
+          )}
         </div>
       )}
 
@@ -326,12 +311,19 @@ export default function Dashboard() {
               <Trophy height={22} color="#ffbf00" />
               <h2>Top Students</h2>
             </div>
-            {latestSemester && (
-              <span className="top-students-section-badge">
-                {/semester/i.test(latestSemester.semester || "")
-                  ? latestSemester.semester.replace(/semester/i, "Semester")
-                  : `${latestSemester.semester} Semester`}
-              </span>
+            {stats === null ? (
+              <div
+                className="stat-skeleton"
+                style={{ width: 90, height: 22, borderRadius: 12, marginBottom: 0 }}
+              />
+            ) : (
+              latestSemester && (
+                <span className="top-students-section-badge">
+                  {/semester/i.test(latestSemester.semester || "")
+                    ? latestSemester.semester.replace(/semester/i, "Semester")
+                    : `${latestSemester.semester} Semester`}
+                </span>
+              )
             )}
           </div>
 
@@ -354,25 +346,61 @@ export default function Dashboard() {
         </div>
 
         <div className="top-students-grid-wrapper">
-          {topStudentsLoading && (
-            <div className="top-students-loading-overlay">
-              <LoadingSpinner />
+          {topStudentsLoading ? (
+            <div className="top-students-grid">
+              <div className="top-student-card cr-card" style={{ minHeight: 140 }}>
+                <div
+                  className="stat-skeleton"
+                  style={{ width: 150, height: 18, marginBottom: 16 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "70%", height: 22, marginBottom: 8 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "45%", height: 16, marginBottom: 8 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "55%", height: 16, marginBottom: 0 }}
+                />
+              </div>
+              <div className="top-student-card gr-card" style={{ minHeight: 140 }}>
+                <div
+                  className="stat-skeleton"
+                  style={{ width: 150, height: 18, marginBottom: 16 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "70%", height: 22, marginBottom: 8 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "45%", height: 16, marginBottom: 8 }}
+                />
+                <div
+                  className="stat-skeleton"
+                  style={{ width: "55%", height: 16, marginBottom: 0 }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="top-students-grid">
+              {renderCard(
+                "cr",
+                topStudents.cr,
+                "CR (Class Representative)",
+                "cr-card",
+              )}
+              {renderCard(
+                "gr",
+                topStudents.gr,
+                "GR (Girls Representative)",
+                "gr-card",
+              )}
             </div>
           )}
-          <div className="top-students-grid">
-            {renderCard(
-              "cr",
-              topStudents.cr,
-              "CR (Class Representative)",
-              "cr-card",
-            )}
-            {renderCard(
-              "gr",
-              topStudents.gr,
-              "GR (Girls Representative)",
-              "gr-card",
-            )}
-          </div>
         </div>
       </div>
 

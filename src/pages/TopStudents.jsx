@@ -6,12 +6,10 @@ import {
   getSemesterTopStudents,
   getSemesterResults,
   setTopStudent,
-  clearTopStudent,
 } from "../api/results";
 import {
   Trophy,
   Pencil,
-  RotateCcw,
   X,
   ArrowLeft,
   ExternalLink,
@@ -144,18 +142,6 @@ export default function TopStudents() {
     }
   };
 
-  const handleReset = async (semesterId, role) => {
-    setSavingOverride(true);
-    try {
-      await clearTopStudent(semesterId, role);
-      await refreshSemester(semesterId);
-    } catch {
-      setError(`Failed to reset ${role.toUpperCase()}`);
-    } finally {
-      setSavingOverride(false);
-    }
-  };
-
   const renderStudentCard = (semesterId, role, data, badgeLabel, cardClass) => (
     <div
       className={`top-student-card ${cardClass} ${!data ? "empty" : ""}`}
@@ -171,20 +157,6 @@ export default function TopStudents() {
             gap: 6,
           }}
         >
-          {data?.isOverride && (
-            <button
-              type="button"
-              title={`Reset ${badgeLabel} to computed GPA leader`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleReset(semesterId, role);
-              }}
-              disabled={savingOverride}
-              className="icon-btn"
-            >
-              <RotateCcw size={14} />
-            </button>
-          )}
           <button
             type="button"
             title={`Manually set ${badgeLabel}`}
