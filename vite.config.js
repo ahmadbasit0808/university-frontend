@@ -163,7 +163,7 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
-              networkTimeoutSeconds: 5,
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: THIRTY_DAYS,
@@ -181,7 +181,7 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
-              networkTimeoutSeconds: 5,
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: THIRTY_DAYS,
@@ -199,7 +199,7 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
-              networkTimeoutSeconds: 5,
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: THIRTY_DAYS,
@@ -217,6 +217,7 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: THIRTY_DAYS,
@@ -233,6 +234,7 @@ export default defineConfig({
               cacheableResponse: {
                 statuses: [0, 200],
               },
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: THIRTY_DAYS,
