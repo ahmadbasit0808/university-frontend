@@ -8,7 +8,9 @@ import {
   getDashboardTopStudents,
   getSemesterTopStudents,
   getSemesterResults,
+  getAllCgpa,
   setTopStudent,
+  clearTopStudent,
 } from "../api/results";
 import {
   Trophy,
@@ -16,6 +18,8 @@ import {
   X,
   ExternalLink,
   ChevronRight,
+  RotateCcw,
+  UserCheck,
 } from "lucide-react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
@@ -32,12 +36,34 @@ export default function Dashboard() {
     gr: null,
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [editingRole, setEditingRole] = useState(null); // "cr" | "gr" | null
   const [candidates, setCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState("");
   const [savingOverride, setSavingOverride] = useState(false);
+  const [refreshingRole, setRefreshingRole] = useState(null);
 
   const { isAuthenticated } = useAuth();
+
+  const handleRefreshCardRole = async (role) => {
+    const metaId =
+      topStudents.metadataId ||
+      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
+    if (!metaId) return;
+    setRefreshingRole(role);
+    try {
+      await clearTopStudent(metaId, role).catch(() => {});
+      await loadTopStudents(selectedSemesterId);
+      setSuccess(`${role.toUpperCase()} refreshed to auto`);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err?.response?.data?.error || `Failed to refresh ${role.toUpperCase()}`);
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setRefreshingRole(null);
+    }
+  };
 
   const loadTopStudents = async (semId = selectedSemesterId) => {
     setTopStudentsLoading(true);
@@ -104,37 +130,122 @@ export default function Dashboard() {
       (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
     if (!metaId) return;
     setEditingRole(role);
+    setError("");
+    setSuccess("");
+    setCandidateSearch("");
+    setLoadingCandidates(true);
     try {
-      const res = await getSemesterResults(metaId);
-      let list = res.data || [];
-      // Filter candidates by gender for CR (males) and GR (females)
-      if (role === "cr" || role === "gr") {
-        try {
-          const studentsRes = await getStudents();
-          const genderByRoll = new Map(
-            studentsRes.data.map((s) => [s.roll_no, s.gender]),
-          );
-          const expectedGender = role === "cr" ? "Male" : "Female";
-          list = list.filter(
-            (s) => genderByRoll.get(s.roll_no) === expectedGender,
-          );
-        } catch {
-          // fall back to full list if gender info is unavailable
+      const [studentsRes, cgpaRes, semResultsRes] = await Promise.allSettled([
+        getStudents(),
+        getAllCgpa(),
+        getSemesterResults(metaId),
+      ]);
+
+      const extractArray = (res) => {
+        if (!res) return [];
+        const val = res.status === "fulfilled" ? res.value : res;
+        const data = val?.data !== undefined ? val.data : val;
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.rows)) return data.rows;
+        if (Array.isArray(data.students)) return data.students;
+        if (Array.isArray(data.data)) return data.data;
+        if (Array.isArray(data.results)) return data.results;
+        if (typeof data === "object") {
+          for (const k of Object.keys(data)) {
+            if (Array.isArray(data[k])) return data[k];
+          }
         }
-      }
-      // Sort candidates by CGPA (highest first)
-      list = [...list].sort(
-        (a, b) => ((b.cgpa ?? b.gpa) ?? 0) - ((a.cgpa ?? a.gpa) ?? 0),
+        return [];
+      };
+
+      const allStudents = extractArray(studentsRes);
+      const cgpaList = extractArray(cgpaRes);
+      const semResultsList = extractArray(semResultsRes);
+
+      const getRollNo = (s) =>
+        s?.roll_no || s?.rollNo || s?.student_id || s?.id;
+      const getName = (s) =>
+        s?.name ||
+        s?.student_name ||
+        s?.full_name ||
+        (getRollNo(s) ? `Student ${getRollNo(s)}` : "");
+      const getGender = (s) => s?.gender || s?.sex || null;
+      const getGpa = (s) => s?.gpa ?? s?.obtained_gpa ?? null;
+      const getCgpa = (s) => s?.cgpa ?? null;
+
+      // Merge into a comprehensive student map
+      const studentMap = new Map();
+
+      const addStudentToMap = (s, defaultGpa = null, defaultCgpa = null) => {
+        if (!s) return;
+        const roll = getRollNo(s);
+        if (!roll) return;
+        const key = String(roll).trim();
+        const existing = studentMap.get(key) || {
+          roll_no: key,
+          name: getName(s),
+          gender: getGender(s),
+          gpa: defaultGpa,
+          cgpa: defaultCgpa,
+        };
+        const name = getName(s);
+        if (name && (!existing.name || existing.name.startsWith("Student "))) {
+          existing.name = name;
+        }
+        const gender = getGender(s);
+        if (gender && !existing.gender) existing.gender = gender;
+        const gpa = getGpa(s) ?? defaultGpa;
+        if (gpa !== null && gpa !== undefined) existing.gpa = gpa;
+        const cgpa = getCgpa(s) ?? defaultCgpa;
+        if (cgpa !== null && cgpa !== undefined) existing.cgpa = cgpa;
+        studentMap.set(key, existing);
+      };
+
+      allStudents.forEach((s) => addStudentToMap(s));
+      cgpaList.forEach((s) => addStudentToMap(s, null, s?.cgpa));
+      semResultsList.forEach((s) => addStudentToMap(s, s?.gpa, s?.cgpa));
+
+      const isMale = (g) => {
+        if (!g) return true;
+        const s = String(g).trim().toLowerCase();
+        return s.startsWith("m") || s === "male";
+      };
+      const isFemale = (g) => {
+        if (!g) return true;
+        const s = String(g).trim().toLowerCase();
+        return s.startsWith("f") || s === "female";
+      };
+
+      const filterFn = role === "cr" ? isMale : isFemale;
+      let list = Array.from(studentMap.values()).filter((s) =>
+        filterFn(s.gender),
       );
+
+      if (list.length === 0 && studentMap.size > 0) {
+        list = Array.from(studentMap.values());
+      }
+
+      list.sort((a, b) => {
+        const scoreA = Number(a.gpa ?? a.cgpa ?? -1);
+        const scoreB = Number(b.gpa ?? b.cgpa ?? -1);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return String(a.roll_no || "").localeCompare(String(b.roll_no || ""));
+      });
+
       setCandidates(list);
-    } catch {
+    } catch (err) {
+      console.error("Failed to load candidates:", err);
       setCandidates([]);
+    } finally {
+      setLoadingCandidates(false);
     }
   };
 
   const closeEditor = () => {
     setEditingRole(null);
     setCandidates([]);
+    setCandidateSearch("");
   };
 
   const handlePick = async (rollNo) => {
@@ -143,12 +254,35 @@ export default function Dashboard() {
       (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
     if (!editingRole || !metaId) return;
     setSavingOverride(true);
+    setError("");
     try {
       await setTopStudent(metaId, rollNo, editingRole);
-      loadTopStudents(selectedSemesterId);
+      await loadTopStudents(selectedSemesterId);
+      setSuccess(`${editingRole.toUpperCase()} updated successfully`);
       closeEditor();
-    } catch {
-      setError(`Failed to set ${editingRole.toUpperCase()}`);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setError(err.response?.data?.error || `Failed to set ${editingRole.toUpperCase()}`);
+    } finally {
+      setSavingOverride(false);
+    }
+  };
+
+  const handleClear = async (role) => {
+    const metaId =
+      topStudents.metadataId ||
+      (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
+    if (!metaId) return;
+    setSavingOverride(true);
+    setError("");
+    try {
+      await clearTopStudent(metaId, role);
+      await loadTopStudents(selectedSemesterId);
+      setSuccess(`${role.toUpperCase()} reset to auto`);
+      closeEditor();
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setError(err.response?.data?.error || `Failed to reset ${role.toUpperCase()}`);
     } finally {
       setSavingOverride(false);
     }
@@ -189,54 +323,189 @@ export default function Dashboard() {
     },
   ];
 
+const getOrdinal = (n) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
   const renderCard = (role, data, badgeLabel, cardClass) => {
     const hasEditPermission =
       isAuthenticated && (topStudents.metadataId || activeSemesterId);
+    const semNum =
+      parseInt(selectedSemObj?.semester || latestSemester?.semester || "1", 10) || 1;
+    const prevSemNum = semNum > 1 ? semNum - 1 : 1;
+    const gpaLabel =
+      semNum > 1
+        ? `${getOrdinal(prevSemNum)} Semester GPA`
+        : "Aggregate";
+
+    const isCr = role === "cr";
+    const roleTitle = isCr ? "Class Representative" : "Girls Representative";
+    const roleBadgeClass = isCr ? "cr" : "gr";
+
+    const maxSemNum = Math.max(
+      ...semestersList.map(
+        (s) =>
+          parseInt(s.semester, 10) ||
+          parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
+          1,
+      ),
+      1,
+    );
+    const isLatest = semNum === maxSemNum;
+    const hasResult = Boolean(data && (data.gpa || data.cgpa || data.roll_no));
+    // 1st semester cannot be refreshed; latest semester if it has no result cannot be refreshed
+    const canRefresh = semNum > 1 && (!isLatest || hasResult);
+    const isRefreshing = refreshingRole === role;
 
     return (
       <div
         className={`top-student-card ${cardClass} ${!data ? "empty" : ""}`}
-        style={{ position: "relative" }}
       >
         {hasEditPermission && (
           <div
+            className="top-student-actions"
             style={{
               position: "absolute",
-              top: 8,
-              right: 8,
+              top: 10,
+              right: 10,
               display: "flex",
               gap: 6,
+              zIndex: 2,
             }}
           >
+            {canRefresh && (
+              <button
+                type="button"
+                title={`Refresh ${role.toUpperCase()} (Revert to auto/re-calculate)`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleRefreshCardRole(role);
+                }}
+                disabled={isRefreshing}
+                className="icon-btn"
+                style={{
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <RotateCcw size={13} className={isRefreshing ? "spin" : ""} />
+              </button>
+            )}
             <button
               type="button"
-              title={`Manually set ${badgeLabel}`}
+              title={`Edit ${role.toUpperCase()}`}
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 openEditor(role);
               }}
               className="icon-btn"
+              style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-sm)",
+              }}
             >
-              <Pencil size={14} />
+              <Pencil size={13} />
             </button>
           </div>
         )}
 
-        <div className="top-student-badge">{badgeLabel}</div>
+        <div className={`top-student-badge-pill ${roleBadgeClass}`}>
+          <span>{isCr ? "CR" : "GR"}</span>
+          <span style={{ opacity: 0.4 }}>•</span>
+          <span>{roleTitle}</span>
+        </div>
 
         {data ? (
           <Link
             to={`/students/${data.roll_no}`}
-            style={{ textDecoration: "none", color: "inherit" }}
+            className="top-student-link-wrap"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+              flex: 1,
+            }}
           >
-            <div className="top-student-name">{data.name}</div>
+            <div className="top-student-name" title={data.name}>
+              {data.name}
+            </div>
             <div className="top-student-roll">{data.roll_no}</div>
-            <div className="top-student-gpa">
-              CGPA: <strong>{data.cgpa ?? data.gpa}</strong>
+
+            <div className="top-student-score-box">
+              {semNum === 1 ? (
+                <>
+                  <div className="top-student-score-label">
+                    {data.aggregate || data.gpa || data.cgpa ? "Aggregate" : "Selection Basis"}
+                  </div>
+                  <div className="top-student-score-val">
+                    {data.aggregate || data.gpa || data.cgpa ? (
+                      <span className="score-num">{data.aggregate || data.gpa || data.cgpa}</span>
+                    ) : (
+                      <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--text)" }}>
+                        Based on Aggregate
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="top-student-score-label">
+                    {gpaLabel}
+                  </div>
+                  <div className="top-student-score-val">
+                    {data.gpa || data.cgpa ? (
+                      <>
+                        <span className="score-num">{data.gpa || data.cgpa}</span>
+                        <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 500 }}>
+                          GPA
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: 500 }}>
+                        Assigned
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </Link>
         ) : (
-          <div className="top-student-name">No data available</div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px 0",
+              width: "100%",
+              flex: 1,
+              gap: 8,
+            }}
+          >
+            <div style={{ fontSize: 14, color: "var(--text-muted)", fontWeight: 500 }}>
+              No {role.toUpperCase()} Assigned
+            </div>
+            {hasEditPermission && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => openEditor(role)}
+                style={{ fontSize: 12, padding: "4px 10px" }}
+              >
+                Assign {role.toUpperCase()}
+              </button>
+            )}
+          </div>
         )}
       </div>
     );
@@ -246,6 +515,7 @@ export default function Dashboard() {
     <div className="page">
       <h1>Dashboard</h1>
       {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
       <div className="stats-grid">
         {cards.map((card) => (
           <Link
@@ -416,15 +686,53 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="modal-body">
-              {candidates.length === 0 ? (
-                <LoadingSpinner />
+              {(() => {
+                const semNum = parseInt(
+                  selectedSemObj?.semester || latestSemester?.semester || "1",
+                  10,
+                );
+                const isAssigned = !!topStudents[editingRole];
+                if (!isAssigned) return null;
+                return (
+                  <div
+                    style={{
+                      marginBottom: 12,
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={savingOverride}
+                      onClick={() => handleClear(editingRole)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 12,
+                      }}
+                    >
+                      <RotateCcw size={13} />
+                      {semNum > 1
+                        ? `Revert to Auto (Sem ${semNum - 1} GPA)`
+                        : "Clear Assignment"}
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {loadingCandidates ? (
+                <div style={{ padding: "40px 0", textAlign: "center" }}>
+                  <LoadingSpinner />
+                </div>
               ) : (
                 <>
                   <div className="candidate-search-bar">
                     <span className="candidate-search-icon">🔍</span>
                     <input
                       type="text"
-                      placeholder={`Search students to set as ${editingRole.toUpperCase()}...`}
+                      placeholder={`Search students to set as ${editingRole?.toUpperCase()}...`}
                       value={candidateSearch}
                       onChange={(e) => setCandidateSearch(e.target.value)}
                       className="candidate-search-input"
@@ -451,16 +759,23 @@ export default function Dashboard() {
                         (s.roll_no || "").toLowerCase().includes(q)
                       );
                     });
+
+                    const currentRoll = topStudents[editingRole]?.roll_no;
+
                     return filtered.length === 0 ? (
                       <div className="candidate-empty">
-                        No students match your search
+                        {candidates.length === 0
+                          ? "No students found."
+                          : "No students match your search"}
                       </div>
                     ) : (
                       <ul className="candidate-list">
                         <li className="candidate-list-header">
                           <span>Student</span>
                           <span>Roll No.</span>
-                          <span>GPA</span>
+                          <span style={{ textAlign: "right" }}>
+                            {semNum > 1 ? `Sem ${semNum - 1} GPA` : "GPA / CGPA"}
+                          </span>
                         </li>
                         {filtered.map((s) => (
                           <li key={s.roll_no}>
@@ -471,18 +786,19 @@ export default function Dashboard() {
                               className="candidate-row"
                             >
                               <span className="candidate-name">
-                                {s.name}
-                                {topStudents[editingRole]?.roll_no ===
-                                  s.roll_no && (
-                                    <span className="candidate-current-tag">
-                                      current
-                                    </span>
-                                  )}
+                                {s.name || "Student"}
+                                {currentRoll === s.roll_no && (
+                                  <span className="candidate-current-tag">
+                                    current
+                                  </span>
+                                )}
                               </span>
                               <span className="candidate-roll">
                                 {s.roll_no}
                               </span>
-                              <span className="candidate-gpa">{s.gpa}</span>
+                              <span className="candidate-gpa">
+                                {s.cgpa ? `${s.cgpa}` : s.gpa ? `${s.gpa}` : "—"}
+                              </span>
                             </button>
                           </li>
                         ))}

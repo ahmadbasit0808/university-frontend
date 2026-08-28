@@ -14,9 +14,12 @@ export const publishSemesterResults = (semesterId) =>
   api.post(`/results/semester/${semesterId}/publish`);
 
 // Admin: manually set CR/GR for a semester (role: "cr" | "gr")
+// Uses PATCH /api/semesters/:semesterId/representatives
 export const setTopStudent = (metadataId, rollNo, role) =>
-  api.post("/results/dashboard/top-students", { metadataId, rollNo, role });
+  api.patch(`/semesters/${metadataId}/representatives`, { role, rollNo });
 
 // Admin: clear a manual CR/GR override, reverting to computed GPA leader
+// Uses DELETE /api/semesters/:semesterId/representatives
 export const clearTopStudent = (metadataId, role) =>
-  api.delete("/results/dashboard/top-students", { data: { metadataId, role } });
+  api.delete(`/semesters/${metadataId}/representatives`, { data: { role } });
+

@@ -1147,15 +1147,20 @@
 }
 
 .top-student-card {
+  position: relative;
   background: var(--card-bg);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 22px 20px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .top-student-card:hover {
@@ -1164,7 +1169,9 @@
 }
 
 .top-student-card.empty {
-  opacity: 0.6;
+  border-style: dashed;
+  background: var(--bg);
+  opacity: 0.85;
 }
 
 .top-student-card.cr-card {
@@ -1172,7 +1179,100 @@
 }
 
 .top-student-card.gr-card {
-  border-top: 4px solid #d946ef;
+  border-top: 4px solid #db2777;
+}
+
+.top-student-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.top-student-badge-pill.cr {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.top-student-badge-pill.gr {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
+.top-student-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+  word-break: break-word;
+}
+
+.top-student-card:hover .top-student-name {
+  color: var(--primary);
+}
+
+.top-student-roll {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: inline-block;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.top-student-score-box {
+  margin-top: auto;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.top-student-score-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.top-student-score-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.top-student-score-val .score-num {
+  color: var(--primary);
+}
+
+.top-student-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
 .top-student-badge {
@@ -1183,40 +1283,205 @@
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
-.cr-card .top-student-badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+.override-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.2px;
 }
 
-.gr-card .top-student-badge {
-  background: #fae8ff;
-  color: #a21caf;
+.icon-btn-reset {
+  color: #b45309 !important;
+  background: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
 }
 
-.top-student-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 4px;
+.icon-btn-reset:hover {
+  background: #fde68a !important;
+  color: #92400e !important;
+  transform: rotate(-30deg);
 }
 
-.top-student-roll {
+.modal-override-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.modal-override-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* Candidate Picker Modal Styles */
+.override-modal {
+  max-width: 500px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.candidate-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.candidate-search-icon {
+  position: absolute;
+  left: 12px;
   font-size: 14px;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  pointer-events: none;
 }
 
-.top-student-gpa {
-  font-size: 16px;
+.candidate-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  font-size: 14px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.candidate-search-input:focus {
+  border-color: var(--primary);
+  background: var(--card-bg);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.candidate-search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.candidate-search-clear:hover {
+  color: var(--text);
+}
+
+.candidate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.candidate-list-header {
+  display: grid;
+  grid-template-columns: 1fr 110px 65px;
+  padding: 8px 14px;
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 65px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--card-bg);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text);
+  transition: background 0.15s ease;
+}
+
+.candidate-row:last-child {
+  border-bottom: none;
+}
+
+.candidate-row:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.candidate-row:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.candidate-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-current-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.candidate-roll {
+  font-family: monospace;
+  font-size: 12.5px;
   color: var(--text-muted);
 }
 
-.top-student-gpa strong {
-  font-size: 24px;
-  color: var(--text);
+.candidate-gpa {
+  font-weight: 700;
+  color: var(--primary);
+  text-align: right;
+}
+
+.candidate-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 /* ============================
@@ -1983,6 +2248,10 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
 }
 
 /* ============================
