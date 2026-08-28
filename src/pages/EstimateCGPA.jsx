@@ -288,7 +288,10 @@ export default function EstimateCGPA() {
         // Restore saved repeat courses and target CGPA if available
         if (!forceReset && savedState) {
           if (Array.isArray(savedState.repeatSelectedCourses)) {
-            setRepeatSelectedCourses(savedState.repeatSelectedCourses);
+            const validSavedRepeats = savedState.repeatSelectedCourses.filter(
+              (r) => parseFloat(r.originalMarks || 0) < 85 && parseFloat(r.creditHours || 0) >= 1
+            );
+            setRepeatSelectedCourses(validSavedRepeats);
           }
           if (savedState.targetCgpa) {
             setTargetCgpa(savedState.targetCgpa);
@@ -494,26 +497,30 @@ export default function EstimateCGPA() {
     };
   }, [transcriptData, activeSemesterMeta]);
 
-  // List of all completed subjects available for repeating
+  // List of all completed subjects available for repeating (marks < 85 and credit hours >= 1)
   const availableRepeatSubjects = useMemo(() => {
     if (!transcriptData?.semesters) return [];
     const list = [];
     transcriptData.semesters.forEach((sem, sIdx) => {
       if (Array.isArray(sem.subjects)) {
         sem.subjects.forEach((sub, idx) => {
-          const uniqueKey = `${sem.id || sem.semester}-${sub.course_code}-${idx}`;
-          list.push({
-            uniqueKey,
-            semesterIndex: sIdx + 1,
-            semesterName: sem.semester,
-            semesterSession: sem.session,
-            courseCode: sub.course_code,
-            courseName: sub.course_name,
-            creditHours: parseFloat(sub.credit_hours || 0),
-            originalMarks: parseFloat(sub.marks_obtained || 0),
-            originalGrade: sub.letter_grade,
-            originalGp: parseFloat(sub.grade_point || 0),
-          });
+          const marks = parseFloat(sub.marks_obtained || 0);
+          const credits = parseFloat(sub.credit_hours || 0);
+          if (marks < 85 && credits >= 1) {
+            const uniqueKey = `${sem.id || sem.semester}-${sub.course_code}-${idx}`;
+            list.push({
+              uniqueKey,
+              semesterIndex: sIdx + 1,
+              semesterName: sem.semester,
+              semesterSession: sem.session,
+              courseCode: sub.course_code,
+              courseName: sub.course_name,
+              creditHours: credits,
+              originalMarks: marks,
+              originalGrade: sub.letter_grade,
+              originalGp: parseFloat(sub.grade_point || 0),
+            });
+          }
         });
       }
     });
