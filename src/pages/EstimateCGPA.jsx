@@ -201,8 +201,8 @@ export default function EstimateCGPA() {
               sub.credit_hours !== null && sub.credit_hours !== undefined
                 ? parseFloat(sub.credit_hours)
                 : matchedCatalog?.credit_hours !== null && matchedCatalog?.credit_hours !== undefined
-                ? parseFloat(matchedCatalog.credit_hours)
-                : 3;
+                  ? parseFloat(matchedCatalog.credit_hours)
+                  : 3;
 
             const savedCourse = savedState?.latestSemesterCourses?.find(
               (sc) =>
@@ -685,10 +685,10 @@ export default function EstimateCGPA() {
       prev.map((r) =>
         r.uniqueKey === uniqueKey
           ? {
-              ...r,
-              estimatedMarks:
-                marks === "" ? "" : Math.min(100, Math.max(0, parseFloat(marks) || 0)),
-            }
+            ...r,
+            estimatedMarks:
+              marks === "" ? "" : Math.min(100, Math.max(0, parseFloat(marks) || 0)),
+          }
           : r
       )
     );
@@ -922,30 +922,13 @@ export default function EstimateCGPA() {
               <h2 className="student-name-heading">{transcriptData.student?.name}</h2>
               <div className="student-meta-details">
                 <span>Roll No: <strong>{transcriptData.student?.roll_no}</strong></span>
-                <span className="dot-sep">•</span>
-                <span>Program: <strong>{transcriptData.student?.program || "BSCS"}</strong></span>
-                <span className="dot-sep">•</span>
-                <span>Completed Semesters: <strong>{baseAcademicStats.completedCount}</strong></span>
               </div>
 
-              <div className="current-stats-chips">
-                <div className="stat-chip">
-                  <span className="stat-chip-label">Recorded CGPA</span>
-                  <span className="stat-chip-val">{baseAcademicStats.recordedCgpa.toFixed(2)}</span>
+              {activeSemesterMeta && (
+                <div className="estimating-banner">
+                  <span>Estimating Semester: <strong>{activeSemesterMeta.semester}</strong></span>
                 </div>
-                <div className="stat-chip">
-                  <span className="stat-chip-label">Completed Credits</span>
-                  <span className="stat-chip-val">{baseAcademicStats.totalCredits} Cr</span>
-                </div>
-                {activeSemesterMeta && (
-                  <div className="stat-chip">
-                    <span className="stat-chip-label">Estimating Semester</span>
-                    <span className="stat-chip-val" style={{ color: "var(--primary)" }}>
-                      {activeSemesterMeta.semester}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Live CGPA Comparison Card */}
@@ -956,28 +939,26 @@ export default function EstimateCGPA() {
                   <div className="cgpa-number current">
                     {baseAcademicStats.recordedCgpa.toFixed(2)}
                   </div>
-                  <span className="cgpa-sub-label">Recorded</span>
                 </div>
 
                 <div className="cgpa-arrow-indicator">
-                  <ArrowRight size={24} className="arrow-icon" />
+                  <ArrowRight size={20} className="arrow-icon" />
                   <div
-                    className={`delta-badge ${
-                      simulationResults.cgpaDelta > 0.001
-                        ? "delta-positive"
-                        : simulationResults.cgpaDelta < -0.001
+                    className={`delta-badge ${simulationResults.cgpaDelta > 0.001
+                      ? "delta-positive"
+                      : simulationResults.cgpaDelta < -0.001
                         ? "delta-negative"
                         : "delta-neutral"
-                    }`}
+                      }`}
                   >
                     {simulationResults.cgpaDelta > 0.001 ? (
                       <>
-                        <TrendingUp size={14} />
+                        <TrendingUp size={13} />
                         +{simulationResults.cgpaDelta.toFixed(2)}
                       </>
                     ) : simulationResults.cgpaDelta < -0.001 ? (
                       <>
-                        <TrendingDown size={14} />
+                        <TrendingDown size={13} />
                         {simulationResults.cgpaDelta.toFixed(2)}
                       </>
                     ) : (
@@ -989,17 +970,15 @@ export default function EstimateCGPA() {
                 <div className="cgpa-side estimated-cgpa-side">
                   <span className="cgpa-side-label">Projected CGPA</span>
                   <div
-                    className={`cgpa-number estimated ${
-                      simulationResults.estimatedCgpa >= 3.5
-                        ? "gpa-glow-excellent"
-                        : simulationResults.estimatedCgpa >= 3.0
+                    className={`cgpa-number estimated ${simulationResults.estimatedCgpa >= 3.5
+                      ? "gpa-glow-excellent"
+                      : simulationResults.estimatedCgpa >= 3.0
                         ? "gpa-glow-good"
                         : "gpa-glow-regular"
-                    }`}
+                      }`}
                   >
                     {simulationResults.estimatedCgpa.toFixed(2)}
                   </div>
-                  <span className="cgpa-sub-label">Estimated</span>
                 </div>
               </div>
 
@@ -1015,19 +994,14 @@ export default function EstimateCGPA() {
                   <div className="metric-item">
                     <span className="metric-title">Repeat GPT Gain:</span>
                     <span
-                      className={`metric-val ${
-                        simulationResults.repeatGptDelta >= 0 ? "text-success" : "text-danger"
-                      }`}
+                      className={`metric-val ${simulationResults.repeatGptDelta >= 0 ? "text-success" : "text-danger"
+                        }`}
                     >
                       {simulationResults.repeatGptDelta >= 0 ? "+" : ""}
                       {simulationResults.repeatGptDelta.toFixed(1)}
                     </span>
                   </div>
                 )}
-                <div className="metric-item">
-                  <span className="metric-title">Total Credits:</span>
-                  <span className="metric-val">{simulationResults.projectedCredits}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -1101,10 +1075,10 @@ export default function EstimateCGPA() {
                         <th style={{ width: "120px" }}>Course Code</th>
                         <th>Course Title</th>
                         <th style={{ width: "110px", textAlign: "center" }}>Credit Hrs</th>
-                        <th style={{ width: "140px" }}>Estimated Marks</th>
+                        <th style={{ width: "140px" }}>Marks</th>
                         <th style={{ width: "90px" }}>Grade</th>
-                        <th style={{ width: "90px" }}>GP</th>
-                        <th style={{ width: "110px" }}>Obtained GPTs</th>
+                        <th style={{ width: "90px" }}>GPA</th>
+                        <th style={{ width: "110px" }}>Obt-GPs</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1119,7 +1093,7 @@ export default function EstimateCGPA() {
                               <span className="course-code-badge">{course.course_code}</span>
                             </td>
                             <td>
-                              <strong className="course-title-text">{course.course_name}</strong>
+                              <span className="course-title-text">{course.course_name}</span>
                             </td>
                             <td className="text-center">
                               <span className="credit-hours-pill">{course.credit_hours} Cr</span>
@@ -1146,11 +1120,10 @@ export default function EstimateCGPA() {
                             </td>
                             <td>
                               <span
-                                className={`grade-badge ${
-                                  letterGrade !== "-"
-                                    ? `grade-${letterGrade.toLowerCase().replace("+", "-plus")}`
-                                    : "grade-projected"
-                                }`}
+                                className={`grade-badge ${letterGrade !== "-"
+                                  ? `grade-${letterGrade.toLowerCase().replace("+", "-plus")}`
+                                  : "grade-projected"
+                                  }`}
                               >
                                 {letterGrade}
                               </span>
@@ -1206,18 +1179,17 @@ export default function EstimateCGPA() {
                             <span className="credit-hours-pill">{course.credit_hours} Cr</span>
                           </div>
                           <span
-                            className={`grade-badge ${
-                              letterGrade !== "-"
-                                ? `grade-${letterGrade.toLowerCase().replace("+", "-plus")}`
-                                : "grade-projected"
-                            }`}
+                            className={`grade-badge ${letterGrade !== "-"
+                              ? `grade-${letterGrade.toLowerCase().replace("+", "-plus")}`
+                              : "grade-projected"
+                              }`}
                           >
                             {letterGrade} &bull; {gradePoint.toFixed(2)} GP
                           </span>
                         </div>
 
                         <div className="mobile-card-title">
-                          <strong>{course.course_name}</strong>
+                          <span>{course.course_name}</span>
                         </div>
 
                         <div className="mobile-card-footer-grid">
@@ -1242,7 +1214,6 @@ export default function EstimateCGPA() {
                                   )
                                 }
                               />
-                              <span className="mobile-out-of">/ 100</span>
                             </div>
                           </div>
 
@@ -1400,8 +1371,8 @@ export default function EstimateCGPA() {
                       <tr>
                         <th style={{ width: "26%" }}>Course & Semester</th>
                         <th style={{ width: "8%", textAlign: "center" }}>Credits</th>
-                        <th style={{ width: "20%" }}>Original Record</th>
-                        <th style={{ width: "16%" }}>New Estimated Marks</th>
+                        <th style={{ width: "20%" }}>Original</th>
+                        <th style={{ width: "16%" }}>Estimated</th>
                         <th style={{ width: "10%", textAlign: "center" }}>New Grade</th>
                         <th style={{ width: "8%", textAlign: "center" }}>New GP</th>
                         <th style={{ width: "10%", textAlign: "center" }}>GPT Gain</th>
@@ -1425,9 +1396,9 @@ export default function EstimateCGPA() {
                                   <span className="course-code-badge repeat-code">{r.courseCode}</span>
                                   <span className="semester-pill-tag">{r.semesterName}</span>
                                 </div>
-                                <strong className="course-title-text" style={{ marginTop: "4px" }}>
+                                <span className="course-title-text" style={{ marginTop: "4px" }}>
                                   {r.courseName}
-                                </strong>
+                                </span>
                               </div>
                             </td>
                             <td className="text-center">
@@ -1435,9 +1406,8 @@ export default function EstimateCGPA() {
                             </td>
                             <td>
                               <div className="repeat-orig-record-cell">
-                                <span className="orig-marks-tag">{Number(r.originalMarks || 0).toFixed(0)} Mks</span>
+                                <span className="orig-marks-tag">{Number(r.originalMarks || 0).toFixed(0)}</span>
                                 <span className="grade-badge">{r.originalGrade}</span>
-                                <span className="orig-gp-text">({r.originalGp.toFixed(2)} GP)</span>
                               </div>
                             </td>
 
@@ -1457,17 +1427,15 @@ export default function EstimateCGPA() {
                                     handleUpdateRepeatMarks(r.uniqueKey, e.target.value)
                                   }
                                 />
-                                <span className="mobile-out-of">/ 100</span>
                               </div>
                             </td>
 
                             <td className="text-center">
                               <span
-                                className={`grade-badge ${
-                                  newGrade !== "-"
-                                    ? `grade-${newGrade.toLowerCase().replace("+", "-plus")}`
-                                    : "grade-projected"
-                                }`}
+                                className={`grade-badge ${newGrade !== "-"
+                                  ? `grade-${newGrade.toLowerCase().replace("+", "-plus")}`
+                                  : "grade-projected"
+                                  }`}
                               >
                                 {newGrade}
                               </span>
@@ -1479,13 +1447,12 @@ export default function EstimateCGPA() {
 
                             <td className="text-center">
                               <span
-                                className={`gpt-gain-tag ${
-                                  gptGain > 0
-                                    ? "gain-positive"
-                                    : gptGain < 0
+                                className={`gpt-gain-tag ${gptGain > 0
+                                  ? "gain-positive"
+                                  : gptGain < 0
                                     ? "gain-negative"
                                     : "gain-zero"
-                                }`}
+                                  }`}
                               >
                                 {gptGain > 0 ? `+${gptGain.toFixed(1)}` : gptGain.toFixed(1)} GPTs
                               </span>
@@ -1518,9 +1485,8 @@ export default function EstimateCGPA() {
                         </td>
                         <td className="text-center">
                           <span
-                            className={`gpt-gain-tag ${
-                              simulationResults.repeatGptDelta >= 0 ? "gain-positive" : "gain-negative"
-                            }`}
+                            className={`gpt-gain-tag ${simulationResults.repeatGptDelta >= 0 ? "gain-positive" : "gain-negative"
+                              }`}
                             style={{ fontSize: "14px", padding: "6px 12px" }}
                           >
                             {simulationResults.repeatGptDelta >= 0 ? "+" : ""}
@@ -1562,9 +1528,9 @@ export default function EstimateCGPA() {
                         </div>
 
                         <div className="mobile-card-title">
-                          <strong>{r.courseName}</strong>
+                          <span>{r.courseName}</span>
                           <div className="mobile-repeat-orig-sub">
-                            Original: <strong>{r.originalMarks} Mks</strong> ({r.originalGrade}, {r.originalGp.toFixed(2)} GP)
+                            Original: <span>{r.originalMarks} </span> ({r.originalGrade})
                           </div>
                         </div>
 
@@ -1582,24 +1548,21 @@ export default function EstimateCGPA() {
                                 value={r.estimatedMarks}
                                 onChange={(e) => handleUpdateRepeatMarks(r.uniqueKey, e.target.value)}
                               />
-                              <span className="mobile-out-of">/ 100</span>
                             </div>
                           </div>
 
                           <div className="mobile-repeat-stats-block">
                             <span
-                              className={`grade-badge ${
-                                newGrade !== "-"
-                                  ? `grade-${newGrade.toLowerCase().replace("+", "-plus")}`
-                                  : "grade-projected"
-                              }`}
+                              className={`grade-badge ${newGrade !== "-"
+                                ? `grade-${newGrade.toLowerCase().replace("+", "-plus")}`
+                                : "grade-projected"
+                                }`}
                             >
                               {newGrade} &bull; {newGp.toFixed(2)} GP
                             </span>
                             <span
-                              className={`gpt-gain-tag ${
-                                gptGain > 0 ? "gain-positive" : gptGain < 0 ? "gain-negative" : "gain-zero"
-                              }`}
+                              className={`gpt-gain-tag ${gptGain > 0 ? "gain-positive" : gptGain < 0 ? "gain-negative" : "gain-zero"
+                                }`}
                             >
                               {gptGain > 0 ? `+${gptGain.toFixed(1)}` : gptGain.toFixed(1)} GPTs
                             </span>
@@ -1627,17 +1590,7 @@ export default function EstimateCGPA() {
                 </div>
               </>
             ) : (
-              <div className="empty-repeats-guide">
-                <div className="empty-repeats-icon">
-                  <RefreshCw size={22} />
-                </div>
-                <div className="empty-repeats-content">
-                  <strong>Looking to improve your CGPA?</strong>
-                  <p>
-                    Search any past completed course above (especially courses with lower grades) to see how retaking them with higher marks will boost your overall degree CGPA.
-                  </p>
-                </div>
-              </div>
+              <></>
             )}
           </div>
 

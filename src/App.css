@@ -4365,7 +4365,7 @@
 /* Hero Section: Student Info & Live CGPA Comparison */
 .estimator-hero-grid {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
+  grid-template-columns: 1fr 1.2fr;
   gap: 20px;
 }
 
@@ -4376,11 +4376,11 @@
 }
 
 .hero-card {
-  background: var(--card-bg);
+  background: var(--card-bg, #ffffff);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg, 12px);
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -4388,14 +4388,14 @@
 
 .student-profile-summary {
   position: relative;
-  background: linear-gradient(145deg, var(--card-bg) 0%, rgba(248, 250, 252, 0.8) 100%);
+  background: var(--card-bg, #ffffff);
 }
 
 .hero-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .badge-chip {
@@ -4405,7 +4405,7 @@
   letter-spacing: 0.5px;
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgba(79, 70, 229, 0.12);
+  background: rgba(79, 70, 229, 0.1);
   color: var(--primary);
 }
 
@@ -4429,58 +4429,42 @@
   gap: 8px;
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .dot-sep {
   opacity: 0.5;
 }
 
-.current-stats-chips {
+.estimating-banner {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stat-chip {
-  flex: 1;
-  min-width: 130px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  align-items: center;
+  gap: 8px;
   padding: 10px 14px;
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-chip-label {
-  font-size: 11px;
+  background: var(--bg, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  font-size: 13px;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  font-weight: 600;
+  margin-top: auto;
 }
 
-.stat-chip-val {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
+.estimating-banner strong {
+  color: var(--primary);
+  font-weight: 600;
 }
 
 /* CGPA Comparison Card */
 .cgpa-live-comparison-card {
-  background: linear-gradient(145deg, #1e1b4b 0%, #171738 100%);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.4);
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border);
 }
 
 .cgpa-comparison-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 10px 0;
+  padding: 8px 0;
   gap: 16px;
 }
 
@@ -4489,58 +4473,54 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .cgpa-side-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #a5b4fc;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
-.cgpa-sub-label {
-  font-size: 11px;
-  color: #818cf8;
-}
-
 .cgpa-number {
-  font-size: 38px;
+  font-size: 36px;
   font-weight: 800;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .cgpa-number.current {
-  color: #e2e8f0;
+  color: #64748b;
 }
 
 .cgpa-number.estimated {
-  color: #ffffff;
-  text-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  color: var(--primary);
 }
 
 .gpa-glow-excellent {
-  color: #34d399 !important;
-  text-shadow: 0 0 24px rgba(52, 211, 153, 0.6) !important;
+  color: #059669 !important;
 }
 
 .gpa-glow-good {
-  color: #60a5fa !important;
-  text-shadow: 0 0 24px rgba(96, 165, 250, 0.6) !important;
+  color: #2563eb !important;
+}
+
+.gpa-glow-regular {
+  color: var(--primary) !important;
 }
 
 .cgpa-arrow-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .arrow-icon {
-  color: #a5b4fc;
-  opacity: 0.8;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .delta-badge {
@@ -4549,31 +4529,34 @@
   gap: 4px;
   padding: 4px 10px;
   border-radius: 9999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .delta-positive {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.4);
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
 }
 
 .delta-negative {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 .delta-neutral {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .comparison-footer-metrics {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--bg, #f8fafc);
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
   flex-wrap: wrap;
@@ -4584,16 +4567,16 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .metric-title {
-  color: #a5b4fc;
+  color: var(--text-muted);
 }
 
 .metric-val {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* Estimator Section Cards */
@@ -4691,7 +4674,7 @@
   width: 90px;
   padding: 6px 10px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   border-radius: var(--radius);
   border: 1.5px solid var(--border);
   text-align: center;
@@ -5213,7 +5196,7 @@
 
 .orig-marks-tag {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text);
 }
 
@@ -5305,6 +5288,7 @@
 
 .course-title-text {
   font-size: 14px;
+  font-weight: 400;
   color: var(--text);
   display: block;
 }
@@ -5323,7 +5307,7 @@
   border: 1.5px solid #cbd5e1;
   background: #ffffff !important;
   font-size: 14.5px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text);
   transition: all 0.2s ease;
 }

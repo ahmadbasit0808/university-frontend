@@ -309,7 +309,7 @@ export default function Dashboard() {
           <div className="top-students-title-wrap">
             <div className="icon-text top-students-title">
               <Trophy height={22} color="#ffbf00" />
-              <h2>Top Students</h2>
+              <h2>Class Representatives</h2>
             </div>
             {stats === null ? (
               <div
@@ -319,9 +319,7 @@ export default function Dashboard() {
             ) : (
               latestSemester && (
                 <span className="top-students-section-badge">
-                  {/semester/i.test(latestSemester.semester || "")
-                    ? latestSemester.semester.replace(/semester/i, "Semester")
-                    : `${latestSemester.semester} Semester`}
+                  Current
                 </span>
               )
             )}

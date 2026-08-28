@@ -192,6 +192,11 @@ export default function TopStudents() {
     </div>
   );
 
+  const visibleSemesters = semesters.filter((sem) => {
+    const data = semesterTopData[sem.id];
+    return Boolean(data && (data.cr || data.gr));
+  });
+
   return (
     <div className="page">
       {/* Minimalist Hero Header */}
@@ -271,7 +276,7 @@ export default function TopStudents() {
                 <Trophy size={26} color="#d97706" />
               </div>
               <div>
-                <h1 className="course-hero-title">Top Students (CR & GR)</h1>
+                <h1 className="course-hero-title">Class Representatives (CR & GR)</h1>
                 <p
                   className="text-muted"
                   style={{ margin: "4px 0 0", fontSize: "14px" }}
@@ -283,7 +288,7 @@ export default function TopStudents() {
           </div>
 
           {/* Minimalist Session & Program Badge */}
-          {semesters.length > 0 && (
+          {visibleSemesters.length > 0 && (
             <span
               style={{
                 background: "var(--card-bg, #ffffff)",
@@ -296,7 +301,7 @@ export default function TopStudents() {
                 whiteSpace: "nowrap",
               }}
             >
-              {semesters[0]?.program || "BSCS"} • {semesters[0]?.session || "2024-2028"}
+              {visibleSemesters[0]?.program || "BSCS"} • {visibleSemesters[0]?.session || "2024-2028"}
             </span>
           )}
         </div>
@@ -308,11 +313,11 @@ export default function TopStudents() {
         <div style={{ padding: "40px 0", textAlign: "center" }}>
           <LoadingSpinner />
         </div>
-      ) : semesters.length === 0 ? (
-        <div className="text-muted">No semesters found.</div>
+      ) : visibleSemesters.length === 0 ? (
+        <div className="text-muted">No top student data available for any semester.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-          {semesters.map((sem) => {
+          {visibleSemesters.map((sem) => {
             const semData = semesterTopData[sem.id] || { cr: null, gr: null };
             return (
               <div key={sem.id} id={`sem-${sem.id}`} className="semester-top-section card">
