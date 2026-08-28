@@ -12,6 +12,7 @@ import {
   Scale,
   ShieldUser,
   User,
+  Calculator,
 } from "lucide-react";
 
 export default function Transcript() {
@@ -118,20 +119,29 @@ export default function Transcript() {
           <h1>Transcript — {data.student?.name}</h1>
           <p className="text-muted">Roll No: {data.student?.roll_no}</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={downloadPDF}
-          disabled={pdfLoading}
-        >
-          {pdfLoading ? (
-            "Generating PDF..."
-          ) : (
-            <>
-              <Download height={18} width={18} />
-              <span>Download Pdf</span>
-            </>
-          )}
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <Link
+            to={`/estimate-cgpa?rollNo=${data.student?.roll_no || rollNo}`}
+            className="btn btn-secondary"
+          >
+            <Calculator height={18} width={18} />
+            <span>Estimate Future CGPA</span>
+          </Link>
+          <button
+            className="btn btn-primary"
+            onClick={downloadPDF}
+            disabled={pdfLoading}
+          >
+            {pdfLoading ? (
+              "Generating PDF..."
+            ) : (
+              <>
+                <Download height={18} width={18} />
+                <span>Download Pdf</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div ref={transcriptRef}>

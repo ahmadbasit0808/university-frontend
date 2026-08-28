@@ -16,11 +16,13 @@ import {
   Menu,
   X,
   ClipboardList,
+  Calculator,
 } from "lucide-react";
 
 const generalItems = [
   { path: "/", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
   { path: "/track", label: "Track", icon: <Search size={18} /> },
+  { path: "/estimate-cgpa", label: "CGPA Estimator", icon: <Calculator size={18} /> },
   { path: "/timetable", label: "Timetable", icon: <Clock size={18} /> },
   { path: "/exam-schedule", label: "Exam Schedule", icon: <ClipboardList size={18} /> },
   { path: "/contact", label: "Contact", icon: <Phone size={18} /> },

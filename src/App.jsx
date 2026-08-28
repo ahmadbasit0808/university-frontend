@@ -24,6 +24,7 @@ import Track from "./pages/Track";
 import TeacherProfile from "./pages/TeacherProfile";
 import CourseProfile from "./pages/CourseProfile";
 import Contact from "./pages/Contact";
+import EstimateCGPA from "./pages/EstimateCGPA";
 import "./App.css";
 import { TableSortProvider } from "./context/TableSortContext";
 
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/timetable" element={<Timetable />} />
                 <Route path="/exam-schedule" element={<ExamSchedule />} />
                 <Route path="/track" element={<Track />} />
+                <Route path="/estimate-cgpa" element={<EstimateCGPA />} />
                 <Route path="/contact" element={<Contact />} />
               </Route>
             </Routes>
