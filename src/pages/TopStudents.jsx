@@ -22,6 +22,13 @@ import {
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 
+import {
+  computeAutoRepresentative,
+  extractArray,
+  isMale,
+  isFemale,
+} from "../utils/topStudentsHelper";
+
 export default function TopStudents() {
   const [semesters, setSemesters] = useState([]);
   const [semesterTopData, setSemesterTopData] = useState({}); // { [semesterId]: { cr, gr, metadataId } }
@@ -41,11 +48,48 @@ export default function TopStudents() {
   const handleRefreshRole = async (semesterId, role) => {
     const key = `${semesterId}-${role}`;
     setRefreshingRoleKey(key);
+    setError("");
+    setSuccess("");
     try {
       await clearTopStudent(semesterId, role).catch(() => {});
-      await refreshSemester(semesterId);
-      setSuccess(`${role.toUpperCase()} refreshed to auto`);
-      setTimeout(() => setSuccess(""), 3000);
+      const semObj = semesters.find((s) => String(s.id) === String(semesterId));
+      let topRes = await getSemesterTopStudents(semesterId).catch(() => null);
+      let roleData = topRes?.data?.[role];
+
+      // If backend returned null/empty for this role, auto-calculate from previous semester GPA
+      if (!roleData || !roleData.roll_no) {
+        const autoStudent = await computeAutoRepresentative(semObj, semesters, role);
+        if (autoStudent) {
+          await setTopStudent(semesterId, autoStudent.roll_no, role).catch(() => {});
+          roleData = autoStudent;
+        }
+      }
+
+      setSemesterTopData((prev) => ({
+        ...prev,
+        [semesterId]: {
+          ...(prev[semesterId] || {}),
+          [role]: roleData || null,
+        },
+      }));
+
+      if (roleData) {
+        setSuccess(
+          `${role.toUpperCase()} refreshed to ${roleData.name || roleData.roll_no}${
+            roleData.gpa ? ` (GPA: ${roleData.gpa})` : ""
+          }`,
+        );
+      } else {
+        setError(
+          `No published results or GPA found for Semester ${
+            (parseInt(semObj?.semester, 10) || 1) - 1
+          } to auto-assign ${role.toUpperCase()}. You can assign manually.`,
+        );
+      }
+      setTimeout(() => {
+        setSuccess("");
+        setError("");
+      }, 3500);
     } catch (err) {
       setError(err?.response?.data?.error || `Failed to refresh ${role.toUpperCase()}`);
       setTimeout(() => setError(""), 3000);
@@ -91,6 +135,23 @@ export default function TopStudents() {
           map[res.value.semesterId] = res.value.data;
         }
       });
+
+      // Auto-resolve any missing CR/GR from previous semester results
+      await Promise.all(
+        sortedSemesters.map(async (sem) => {
+          const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
+          if (!semData.cr) {
+            const autoCr = await computeAutoRepresentative(sem, sortedSemesters, "cr");
+            if (autoCr) semData.cr = autoCr;
+          }
+          if (!semData.gr) {
+            const autoGr = await computeAutoRepresentative(sem, sortedSemesters, "gr");
+            if (autoGr) semData.gr = autoGr;
+          }
+          map[sem.id] = semData;
+        }),
+      );
+
       setSemesterTopData(map);
     } catch {
       setError("Failed to load semester top students data.");
@@ -106,9 +167,19 @@ export default function TopStudents() {
   const refreshSemester = async (semId) => {
     try {
       const res = await getSemesterTopStudents(semId);
+      const semObj = semesters.find((s) => String(s.id) === String(semId));
+      const semData = res.data || { cr: null, gr: null, metadataId: semId };
+      if (!semData.cr) {
+        const autoCr = await computeAutoRepresentative(semObj, semesters, "cr");
+        if (autoCr) semData.cr = autoCr;
+      }
+      if (!semData.gr) {
+        const autoGr = await computeAutoRepresentative(semObj, semesters, "gr");
+        if (autoGr) semData.gr = autoGr;
+      }
       setSemesterTopData((prev) => ({
         ...prev,
-        [semId]: res.data || { cr: null, gr: null, metadataId: semId },
+        [semId]: semData,
       }));
     } catch {
       // ignore
@@ -122,29 +193,31 @@ export default function TopStudents() {
     setCandidateSearch("");
     setLoadingCandidates(true);
     try {
+      const currentSem = semesters.find(
+        (s) => String(s.id) === String(semesterId),
+      );
+      const semNum =
+        parseInt(currentSem?.semester, 10) ||
+        parseInt(String(currentSem?.semester || "").match(/\d+/)?.[0], 10) ||
+        1;
+      const prevSem =
+        semNum > 1
+          ? semesters.find((s) => {
+              const n =
+                parseInt(s.semester, 10) ||
+                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
+                0;
+              return n === semNum - 1;
+            })
+          : null;
+
+      const targetSemId = prevSem ? prevSem.id : semesterId;
+
       const [studentsRes, cgpaRes, semResultsRes] = await Promise.allSettled([
         getStudents(),
         getAllCgpa(),
-        getSemesterResults(semesterId),
+        getSemesterResults(targetSemId),
       ]);
-
-      const extractArray = (res) => {
-        if (!res) return [];
-        const val = res.status === "fulfilled" ? res.value : res;
-        const data = val?.data !== undefined ? val.data : val;
-        if (!data) return [];
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data.rows)) return data.rows;
-        if (Array.isArray(data.students)) return data.students;
-        if (Array.isArray(data.data)) return data.data;
-        if (Array.isArray(data.results)) return data.results;
-        if (typeof data === "object") {
-          for (const k of Object.keys(data)) {
-            if (Array.isArray(data[k])) return data[k];
-          }
-        }
-        return [];
-      };
 
       const allStudents = extractArray(studentsRes);
       const cgpaList = extractArray(cgpaRes);
@@ -193,17 +266,6 @@ export default function TopStudents() {
       cgpaList.forEach((s) => addStudentToMap(s, null, s?.cgpa));
       semResultsList.forEach((s) => addStudentToMap(s, s?.gpa, s?.cgpa));
 
-      const isMale = (g) => {
-        if (!g) return true;
-        const s = String(g).trim().toLowerCase();
-        return s.startsWith("m") || s === "male";
-      };
-      const isFemale = (g) => {
-        if (!g) return true;
-        const s = String(g).trim().toLowerCase();
-        return s.startsWith("f") || s === "female";
-      };
-
       const filterFn = role === "cr" ? isMale : isFemale;
       let list = Array.from(studentMap.values()).filter((s) =>
         filterFn(s.gender),
@@ -214,9 +276,12 @@ export default function TopStudents() {
       }
 
       list.sort((a, b) => {
-        const scoreA = Number(a.gpa ?? a.cgpa ?? -1);
-        const scoreB = Number(b.gpa ?? b.cgpa ?? -1);
+        const scoreA = a.gpa !== null && a.gpa !== undefined ? Number(a.gpa) : -1;
+        const scoreB = b.gpa !== null && b.gpa !== undefined ? Number(b.gpa) : -1;
         if (scoreB !== scoreA) return scoreB - scoreA;
+        const cgpaA = Number(a.cgpa ?? -1);
+        const cgpaB = Number(b.cgpa ?? -1);
+        if (cgpaB !== cgpaA) return cgpaB - cgpaA;
         return String(a.roll_no || "").localeCompare(String(b.roll_no || ""));
       });
 
@@ -641,28 +706,40 @@ export default function TopStudents() {
       )}
 
       {/* Override Modal */}
-      {editingRole && (
-        <div className="modal-overlay" onClick={closeEditor}>
-          <div
-            className="modal-content override-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>Set {editingRole.role.toUpperCase()}</h3>
-              <button type="button" onClick={closeEditor} className="icon-btn">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="modal-body">
-              {(() => {
-                const currentSem = semesters.find(
-                  (s) => String(s.id) === String(editingRole.semesterId),
-                );
-                const semNum = parseInt(currentSem?.semester || "1", 10);
-                const isAssigned =
-                  !!semesterTopData[editingRole.semesterId]?.[editingRole.role];
-                if (!isAssigned) return null;
-                return (
+      {editingRole && (() => {
+        const currentSem = semesters.find(
+          (s) => String(s.id) === String(editingRole.semesterId),
+        );
+        const semNum = parseInt(currentSem?.semester || "1", 10);
+        const isAssigned =
+          !!semesterTopData[editingRole.semesterId]?.[editingRole.role];
+        const currentRoll =
+          semesterTopData[editingRole.semesterId]?.[
+            editingRole.role
+          ]?.roll_no;
+        const q = candidateSearch.trim().toLowerCase();
+        const filtered = candidates.filter((s) => {
+          if (!q) return true;
+          return (
+            (s.name || "").toLowerCase().includes(q) ||
+            (s.roll_no || "").toLowerCase().includes(q)
+          );
+        });
+
+        return (
+          <div className="modal-overlay" onClick={closeEditor}>
+            <div
+              className="modal-content override-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Set {editingRole.role.toUpperCase()}</h3>
+                <button type="button" onClick={closeEditor} className="icon-btn">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="modal-body">
+                {isAssigned && (
                   <div
                     style={{
                       marginBottom: 12,
@@ -690,53 +767,37 @@ export default function TopStudents() {
                         : "Clear Assignment"}
                     </button>
                   </div>
-                );
-              })()}
+                )}
 
-              {loadingCandidates ? (
-                <div style={{ padding: "40px 0", textAlign: "center" }}>
-                  <LoadingSpinner />
-                </div>
-              ) : (
-                <>
-                  <div className="candidate-search-bar">
-                    <span className="candidate-search-icon">🔍</span>
-                    <input
-                      type="text"
-                      placeholder={`Search students to set as ${editingRole.role.toUpperCase()}...`}
-                      value={candidateSearch}
-                      onChange={(e) => setCandidateSearch(e.target.value)}
-                      className="candidate-search-input"
-                      autoFocus
-                    />
-                    {candidateSearch && (
-                      <button
-                        type="button"
-                        className="candidate-search-clear"
-                        onClick={() => setCandidateSearch("")}
-                        title="Clear search"
-                      >
-                        &times;
-                      </button>
-                    )}
+                {loadingCandidates ? (
+                  <div style={{ padding: "40px 0", textAlign: "center" }}>
+                    <LoadingSpinner />
                   </div>
+                ) : (
+                  <>
+                    <div className="candidate-search-bar">
+                      <span className="candidate-search-icon">🔍</span>
+                      <input
+                        type="text"
+                        placeholder={`Search students to set as ${editingRole.role.toUpperCase()}...`}
+                        value={candidateSearch}
+                        onChange={(e) => setCandidateSearch(e.target.value)}
+                        className="candidate-search-input"
+                        autoFocus
+                      />
+                      {candidateSearch && (
+                        <button
+                          type="button"
+                          className="candidate-search-clear"
+                          onClick={() => setCandidateSearch("")}
+                          title="Clear search"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
 
-                  {(() => {
-                    const q = candidateSearch.trim().toLowerCase();
-                    const filtered = candidates.filter((s) => {
-                      if (!q) return true;
-                      return (
-                        (s.name || "").toLowerCase().includes(q) ||
-                        (s.roll_no || "").toLowerCase().includes(q)
-                      );
-                    });
-
-                    const currentRoll =
-                      semesterTopData[editingRole.semesterId]?.[
-                        editingRole.role
-                      ]?.roll_no;
-
-                    return filtered.length === 0 ? (
+                    {filtered.length === 0 ? (
                       <div className="candidate-empty">
                         {candidates.length === 0
                           ? "No students found."
@@ -771,20 +832,24 @@ export default function TopStudents() {
                                 {s.roll_no}
                               </span>
                               <span className="candidate-gpa">
-                                {s.cgpa ? `${s.cgpa}` : s.gpa ? `${s.gpa}` : "—"}
+                                {s.gpa !== null && s.gpa !== undefined
+                                  ? `${parseFloat(s.gpa).toFixed(2)}`
+                                  : s.cgpa !== null && s.cgpa !== undefined
+                                    ? `${parseFloat(s.cgpa).toFixed(2)}`
+                                    : "—"}
                               </span>
                             </button>
                           </li>
                         ))}
                       </ul>
-                    );
-                  })()}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

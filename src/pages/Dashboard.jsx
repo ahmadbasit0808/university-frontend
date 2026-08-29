@@ -24,6 +24,13 @@ import {
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 
+import {
+  computeAutoRepresentative,
+  extractArray,
+  isMale,
+  isFemale,
+} from "../utils/topStudentsHelper";
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [semestersList, setSemestersList] = useState([]);
@@ -52,11 +59,58 @@ export default function Dashboard() {
       (selectedSemesterId !== "latest" ? selectedSemesterId : latestSemester?.id);
     if (!metaId) return;
     setRefreshingRole(role);
+    setError("");
+    setSuccess("");
     try {
       await clearTopStudent(metaId, role).catch(() => {});
-      await loadTopStudents(selectedSemesterId);
-      setSuccess(`${role.toUpperCase()} refreshed to auto`);
-      setTimeout(() => setSuccess(""), 3000);
+      const activeSem =
+        semestersList.find((s) => String(s.id) === String(metaId)) ||
+        latestSemester;
+
+      let topRes = null;
+      if (!selectedSemesterId || selectedSemesterId === "latest") {
+        topRes = await getDashboardTopStudents().catch(() => null);
+      } else {
+        topRes = await getSemesterTopStudents(metaId).catch(() => null);
+      }
+
+      let roleData = topRes?.data?.[role];
+
+      // If backend returned null/empty for this role, auto-calculate from previous semester GPA
+      if (!roleData || !roleData.roll_no) {
+        const autoStudent = await computeAutoRepresentative(
+          activeSem,
+          semestersList,
+          role,
+        );
+        if (autoStudent) {
+          await setTopStudent(metaId, autoStudent.roll_no, role).catch(() => {});
+          roleData = autoStudent;
+        }
+      }
+
+      setTopStudents((prev) => ({
+        ...prev,
+        [role]: roleData || null,
+      }));
+
+      if (roleData) {
+        setSuccess(
+          `${role.toUpperCase()} refreshed to ${roleData.name || roleData.roll_no}${
+            roleData.gpa ? ` (GPA: ${roleData.gpa})` : ""
+          }`,
+        );
+      } else {
+        setError(
+          `No published results or GPA found for Semester ${
+            (parseInt(activeSem?.semester, 10) || 1) - 1
+          } to auto-assign ${role.toUpperCase()}. You can assign manually.`,
+        );
+      }
+      setTimeout(() => {
+        setSuccess("");
+        setError("");
+      }, 3500);
     } catch (err) {
       setError(err?.response?.data?.error || `Failed to refresh ${role.toUpperCase()}`);
       setTimeout(() => setError(""), 3000);
@@ -65,20 +119,50 @@ export default function Dashboard() {
     }
   };
 
-  const loadTopStudents = async (semId = selectedSemesterId) => {
+  const loadTopStudents = async (
+    semId = selectedSemesterId,
+    currentSemesters = semestersList,
+    currentLatest = latestSemester,
+  ) => {
     setTopStudentsLoading(true);
     try {
+      let data = { metadataId: null, cr: null, gr: null };
       if (!semId || semId === "latest") {
         const res = await getDashboardTopStudents();
-        setTopStudents(res.data || { metadataId: null, cr: null, gr: null });
+        data = res.data || { metadataId: null, cr: null, gr: null };
       } else {
         const res = await getSemesterTopStudents(semId);
-        setTopStudents({
+        data = {
           metadataId: res.data?.metadataId || semId,
           cr: res.data?.cr || null,
           gr: res.data?.gr || null,
-        });
+        };
       }
+
+      const activeSem =
+        currentSemesters.find((s) => String(s.id) === String(semId)) ||
+        (semId === "latest" ? currentLatest : null);
+
+      if (activeSem) {
+        if (!data.cr) {
+          const autoCr = await computeAutoRepresentative(
+            activeSem,
+            currentSemesters,
+            "cr",
+          );
+          if (autoCr) data.cr = autoCr;
+        }
+        if (!data.gr) {
+          const autoGr = await computeAutoRepresentative(
+            activeSem,
+            currentSemesters,
+            "gr",
+          );
+          if (autoGr) data.gr = autoGr;
+        }
+      }
+
+      setTopStudents(data);
     } catch {
       setTopStudents({
         metadataId: semId !== "latest" ? semId : null,
@@ -111,17 +195,20 @@ export default function Dashboard() {
           return nA - nB;
         });
         setSemestersList(sorted);
+        let latest = null;
         if (sem.length > 0) {
-          const latest = sem.reduce((a, b) => {
+          latest = sem.reduce((a, b) => {
             const n = (s) => parseInt(s.semester) || 0;
             return n(b) > n(a) ? b : a;
           });
           setLatestSemester(latest);
         }
+        loadTopStudents("latest", sorted, latest);
       })
-      .catch(() => setError("Failed to load dashboard data"));
-
-    loadTopStudents("latest");
+      .catch(() => {
+        setError("Failed to load dashboard data");
+        setTopStudentsLoading(false);
+      });
   }, []);
 
   const openEditor = async (role) => {
@@ -135,29 +222,31 @@ export default function Dashboard() {
     setCandidateSearch("");
     setLoadingCandidates(true);
     try {
+      const activeSem =
+        semestersList.find((s) => String(s.id) === String(metaId)) ||
+        latestSemester;
+      const semNum =
+        parseInt(activeSem?.semester, 10) ||
+        parseInt(String(activeSem?.semester || "").match(/\d+/)?.[0], 10) ||
+        1;
+      const prevSem =
+        semNum > 1
+          ? semestersList.find((s) => {
+              const n =
+                parseInt(s.semester, 10) ||
+                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
+                0;
+              return n === semNum - 1;
+            })
+          : null;
+
+      const targetSemId = prevSem ? prevSem.id : metaId;
+
       const [studentsRes, cgpaRes, semResultsRes] = await Promise.allSettled([
         getStudents(),
         getAllCgpa(),
-        getSemesterResults(metaId),
+        getSemesterResults(targetSemId),
       ]);
-
-      const extractArray = (res) => {
-        if (!res) return [];
-        const val = res.status === "fulfilled" ? res.value : res;
-        const data = val?.data !== undefined ? val.data : val;
-        if (!data) return [];
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data.rows)) return data.rows;
-        if (Array.isArray(data.students)) return data.students;
-        if (Array.isArray(data.data)) return data.data;
-        if (Array.isArray(data.results)) return data.results;
-        if (typeof data === "object") {
-          for (const k of Object.keys(data)) {
-            if (Array.isArray(data[k])) return data[k];
-          }
-        }
-        return [];
-      };
 
       const allStudents = extractArray(studentsRes);
       const cgpaList = extractArray(cgpaRes);
@@ -206,17 +295,6 @@ export default function Dashboard() {
       cgpaList.forEach((s) => addStudentToMap(s, null, s?.cgpa));
       semResultsList.forEach((s) => addStudentToMap(s, s?.gpa, s?.cgpa));
 
-      const isMale = (g) => {
-        if (!g) return true;
-        const s = String(g).trim().toLowerCase();
-        return s.startsWith("m") || s === "male";
-      };
-      const isFemale = (g) => {
-        if (!g) return true;
-        const s = String(g).trim().toLowerCase();
-        return s.startsWith("f") || s === "female";
-      };
-
       const filterFn = role === "cr" ? isMale : isFemale;
       let list = Array.from(studentMap.values()).filter((s) =>
         filterFn(s.gender),
@@ -227,9 +305,12 @@ export default function Dashboard() {
       }
 
       list.sort((a, b) => {
-        const scoreA = Number(a.gpa ?? a.cgpa ?? -1);
-        const scoreB = Number(b.gpa ?? b.cgpa ?? -1);
+        const scoreA = a.gpa !== null && a.gpa !== undefined ? Number(a.gpa) : -1;
+        const scoreB = b.gpa !== null && b.gpa !== undefined ? Number(b.gpa) : -1;
         if (scoreB !== scoreA) return scoreB - scoreA;
+        const cgpaA = Number(a.cgpa ?? -1);
+        const cgpaB = Number(b.cgpa ?? -1);
+        if (cgpaB !== cgpaA) return cgpaB - cgpaA;
         return String(a.roll_no || "").localeCompare(String(b.roll_no || ""));
       });
 
@@ -673,27 +754,36 @@ const getOrdinal = (n) => {
       </div>
 
       {/* Simple override picker */}
-      {editingRole && (
-        <div className="modal-overlay" onClick={closeEditor}>
-          <div
-            className="modal-content override-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>Set {editingRole.toUpperCase()}</h3>
-              <button type="button" onClick={closeEditor} className="icon-btn">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="modal-body">
-              {(() => {
-                const semNum = parseInt(
-                  selectedSemObj?.semester || latestSemester?.semester || "1",
-                  10,
-                );
-                const isAssigned = !!topStudents[editingRole];
-                if (!isAssigned) return null;
-                return (
+      {editingRole && (() => {
+        const semNum = parseInt(
+          selectedSemObj?.semester || latestSemester?.semester || "1",
+          10,
+        );
+        const isAssigned = !!topStudents[editingRole];
+        const currentRoll = topStudents[editingRole]?.roll_no;
+        const q = candidateSearch.trim().toLowerCase();
+        const filtered = candidates.filter((s) => {
+          if (!q) return true;
+          return (
+            (s.name || "").toLowerCase().includes(q) ||
+            (s.roll_no || "").toLowerCase().includes(q)
+          );
+        });
+
+        return (
+          <div className="modal-overlay" onClick={closeEditor}>
+            <div
+              className="modal-content override-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Set {editingRole.toUpperCase()}</h3>
+                <button type="button" onClick={closeEditor} className="icon-btn">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="modal-body">
+                {isAssigned && (
                   <div
                     style={{
                       marginBottom: 12,
@@ -719,50 +809,37 @@ const getOrdinal = (n) => {
                         : "Clear Assignment"}
                     </button>
                   </div>
-                );
-              })()}
+                )}
 
-              {loadingCandidates ? (
-                <div style={{ padding: "40px 0", textAlign: "center" }}>
-                  <LoadingSpinner />
-                </div>
-              ) : (
-                <>
-                  <div className="candidate-search-bar">
-                    <span className="candidate-search-icon">🔍</span>
-                    <input
-                      type="text"
-                      placeholder={`Search students to set as ${editingRole?.toUpperCase()}...`}
-                      value={candidateSearch}
-                      onChange={(e) => setCandidateSearch(e.target.value)}
-                      className="candidate-search-input"
-                      autoFocus
-                    />
-                    {candidateSearch && (
-                      <button
-                        type="button"
-                        className="candidate-search-clear"
-                        onClick={() => setCandidateSearch("")}
-                        title="Clear search"
-                      >
-                        &times;
-                      </button>
-                    )}
+                {loadingCandidates ? (
+                  <div style={{ padding: "40px 0", textAlign: "center" }}>
+                    <LoadingSpinner />
                   </div>
+                ) : (
+                  <>
+                    <div className="candidate-search-bar">
+                      <span className="candidate-search-icon">🔍</span>
+                      <input
+                        type="text"
+                        placeholder={`Search students to set as ${editingRole?.toUpperCase()}...`}
+                        value={candidateSearch}
+                        onChange={(e) => setCandidateSearch(e.target.value)}
+                        className="candidate-search-input"
+                        autoFocus
+                      />
+                      {candidateSearch && (
+                        <button
+                          type="button"
+                          className="candidate-search-clear"
+                          onClick={() => setCandidateSearch("")}
+                          title="Clear search"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
 
-                  {(() => {
-                    const q = candidateSearch.trim().toLowerCase();
-                    const filtered = candidates.filter((s) => {
-                      if (!q) return true;
-                      return (
-                        (s.name || "").toLowerCase().includes(q) ||
-                        (s.roll_no || "").toLowerCase().includes(q)
-                      );
-                    });
-
-                    const currentRoll = topStudents[editingRole]?.roll_no;
-
-                    return filtered.length === 0 ? (
+                    {filtered.length === 0 ? (
                       <div className="candidate-empty">
                         {candidates.length === 0
                           ? "No students found."
@@ -797,20 +874,24 @@ const getOrdinal = (n) => {
                                 {s.roll_no}
                               </span>
                               <span className="candidate-gpa">
-                                {s.cgpa ? `${s.cgpa}` : s.gpa ? `${s.gpa}` : "—"}
+                                {s.gpa !== null && s.gpa !== undefined
+                                  ? `${parseFloat(s.gpa).toFixed(2)}`
+                                  : s.cgpa !== null && s.cgpa !== undefined
+                                    ? `${parseFloat(s.cgpa).toFixed(2)}`
+                                    : "—"}
                               </span>
                             </button>
                           </li>
                         ))}
                       </ul>
-                    );
-                  })()}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
