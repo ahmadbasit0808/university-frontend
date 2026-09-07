@@ -198,7 +198,7 @@ export default function StudentProfile() {
                       key={sem.id}
                       onClick={() =>
                         navigate(
-                          `/results/semester/${sem.metadata_id}/${rollNo}`,
+                          `/results/semester/${sem.id || sem.metadata_id || sem.semester_id}/${rollNo}`,
                         )
                       }
                     >
