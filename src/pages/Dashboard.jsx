@@ -29,6 +29,10 @@ import {
   extractArray,
   isMale,
   isFemale,
+  getCachedStudents,
+  getCachedSemesterResults,
+  getCachedAllCgpa,
+  clearTopStudentsCache,
 } from "../utils/topStudentsHelper";
 
 export default function Dashboard() {
@@ -123,43 +127,40 @@ export default function Dashboard() {
     semId = selectedSemesterId,
     currentSemesters = semestersList,
     currentLatest = latestSemester,
+    preloadedStudents = null,
   ) => {
     setTopStudentsLoading(true);
     try {
-      let data = { metadataId: null, cr: null, gr: null };
-      if (!semId || semId === "latest") {
-        const res = await getDashboardTopStudents();
-        data = res.data || { metadataId: null, cr: null, gr: null };
-      } else {
-        const res = await getSemesterTopStudents(semId);
-        data = {
-          metadataId: res.data?.metadataId || semId,
-          cr: res.data?.cr || null,
-          gr: res.data?.gr || null,
-        };
-      }
+      const topPromise =
+        !semId || semId === "latest"
+          ? getDashboardTopStudents()
+          : getSemesterTopStudents(semId);
+
+      const res = await topPromise.catch(() => null);
+      let data = {
+        metadataId: res?.data?.metadataId || (semId !== "latest" ? semId : null),
+        cr: res?.data?.cr || null,
+        gr: res?.data?.gr || null,
+      };
 
       const activeSem =
         currentSemesters.find((s) => String(s.id) === String(semId)) ||
         (semId === "latest" ? currentLatest : null);
 
-      if (activeSem) {
-        if (!data.cr) {
-          const autoCr = await computeAutoRepresentative(
-            activeSem,
-            currentSemesters,
-            "cr",
-          );
-          if (autoCr) data.cr = autoCr;
-        }
-        if (!data.gr) {
-          const autoGr = await computeAutoRepresentative(
-            activeSem,
-            currentSemesters,
-            "gr",
-          );
-          if (autoGr) data.gr = autoGr;
-        }
+      if (activeSem && (!data.cr || !data.gr)) {
+        const context = preloadedStudents
+          ? { studentsList: preloadedStudents }
+          : {};
+        const [autoCr, autoGr] = await Promise.all([
+          !data.cr
+            ? computeAutoRepresentative(activeSem, currentSemesters, "cr", context)
+            : Promise.resolve(data.cr),
+          !data.gr
+            ? computeAutoRepresentative(activeSem, currentSemesters, "gr", context)
+            : Promise.resolve(data.gr),
+        ]);
+        if (autoCr) data.cr = autoCr;
+        if (autoGr) data.gr = autoGr;
       }
 
       setTopStudents(data);
@@ -180,10 +181,17 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    Promise.all([getStudents(), getTeachers(), getCourses(), getSemesters()])
-      .then(([students, teachers, courses, semesters]) => {
+    const dashboardTopPromise = getDashboardTopStudents().catch(() => null);
+
+    Promise.all([
+      getCachedStudents().catch(() => []),
+      getTeachers(),
+      getCourses(),
+      getSemesters(),
+    ])
+      .then(async ([studentsList, teachers, courses, semesters]) => {
         setStats({
-          students: students.data.length,
+          students: studentsList.length,
           teachers: teachers.data.length,
           courses: courses.data.length,
           semesters: semesters.data.length,
@@ -203,7 +211,35 @@ export default function Dashboard() {
           });
           setLatestSemester(latest);
         }
-        loadTopStudents("latest", sorted, latest);
+
+        // Fast resolution of top students using already in-flight promise and loaded students
+        try {
+          const res = await dashboardTopPromise;
+          let data = {
+            metadataId: res?.data?.metadataId || null,
+            cr: res?.data?.cr || null,
+            gr: res?.data?.gr || null,
+          };
+          const activeSem = latest;
+          if (activeSem && (!data.cr || !data.gr)) {
+            const context = { studentsList };
+            const [autoCr, autoGr] = await Promise.all([
+              !data.cr
+                ? computeAutoRepresentative(activeSem, sorted, "cr", context)
+                : Promise.resolve(data.cr),
+              !data.gr
+                ? computeAutoRepresentative(activeSem, sorted, "gr", context)
+                : Promise.resolve(data.gr),
+            ]);
+            if (autoCr) data.cr = autoCr;
+            if (autoGr) data.gr = autoGr;
+          }
+          setTopStudents(data);
+        } catch {
+          setTopStudents({ metadataId: null, cr: null, gr: null });
+        } finally {
+          setTopStudentsLoading(false);
+        }
       })
       .catch(() => {
         setError("Failed to load dashboard data");
@@ -242,15 +278,11 @@ export default function Dashboard() {
 
       const targetSemId = prevSem ? prevSem.id : metaId;
 
-      const [studentsRes, cgpaRes, semResultsRes] = await Promise.allSettled([
-        getStudents(),
-        getAllCgpa(),
-        getSemesterResults(targetSemId),
+      const [allStudents, cgpaList, semResultsList] = await Promise.all([
+        getCachedStudents().catch(() => []),
+        getCachedAllCgpa().catch(() => []),
+        getCachedSemesterResults(targetSemId).catch(() => []),
       ]);
-
-      const allStudents = extractArray(studentsRes);
-      const cgpaList = extractArray(cgpaRes);
-      const semResultsList = extractArray(semResultsRes);
 
       const getRollNo = (s) =>
         s?.roll_no || s?.rollNo || s?.student_id || s?.id;

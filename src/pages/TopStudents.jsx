@@ -27,6 +27,10 @@ import {
   extractArray,
   isMale,
   isFemale,
+  getCachedStudents,
+  getCachedSemesterResults,
+  getCachedAllCgpa,
+  clearTopStudentsCache,
 } from "../utils/topStudentsHelper";
 
 export default function TopStudents() {
@@ -101,9 +105,13 @@ export default function TopStudents() {
   const fetchAllTopStudents = async () => {
     try {
       setLoading(true);
-      const { data: semList } = await getSemesters();
+      // 1. Fetch semesters and pre-warm students in parallel
+      const [semRes, studentsList] = await Promise.all([
+        getSemesters(),
+        getCachedStudents().catch(() => []),
+      ]);
 
-      // Sort semesters by semester number
+      const semList = semRes.data || [];
       const sortedSemesters = [...semList].sort((a, b) => {
         const nA = parseInt(a.semester) || 0;
         const nB = parseInt(b.semester) || 0;
@@ -111,7 +119,7 @@ export default function TopStudents() {
       });
       setSemesters(sortedSemesters);
 
-      // Fetch top students for all semesters in parallel
+      // 2. Fetch top-student overrides for all semesters in parallel
       const topResults = await Promise.allSettled(
         sortedSemesters.map(async (sem) => {
           try {
@@ -136,21 +144,87 @@ export default function TopStudents() {
         }
       });
 
-      // Auto-resolve any missing CR/GR from previous semester results
-      await Promise.all(
-        sortedSemesters.map(async (sem) => {
-          const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
-          if (!semData.cr) {
-            const autoCr = await computeAutoRepresentative(sem, sortedSemesters, "cr");
-            if (autoCr) semData.cr = autoCr;
+      // 3. Identify which previous semesters actually need results for auto-resolving missing CR/GR
+      const neededPrevSemIds = new Set();
+      let needsCgpaFallback = false;
+
+      sortedSemesters.forEach((sem) => {
+        const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
+        if (!semData.cr || !semData.gr) {
+          const semNum =
+            parseInt(sem.semester, 10) ||
+            parseInt(String(sem.semester || "").match(/\d+/)?.[0], 10) ||
+            1;
+          if (semNum > 1) {
+            const prevSem = sortedSemesters.find((s) => {
+              const n =
+                parseInt(s.semester, 10) ||
+                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
+                0;
+              return n === semNum - 1;
+            });
+            if (prevSem && prevSem.id) {
+              neededPrevSemIds.add(prevSem.id);
+            } else {
+              needsCgpaFallback = true;
+            }
+          } else {
+            needsCgpaFallback = true;
           }
-          if (!semData.gr) {
-            const autoGr = await computeAutoRepresentative(sem, sortedSemesters, "gr");
-            if (autoGr) semData.gr = autoGr;
-          }
-          map[sem.id] = semData;
-        }),
-      );
+        }
+      });
+
+      // 4. Batch fetch unique required semester results and CGPA in parallel
+      const resultsMap = {};
+      const fetchTasks = Array.from(neededPrevSemIds).map(async (prevSemId) => {
+        const res = await getCachedSemesterResults(prevSemId).catch(() => []);
+        resultsMap[prevSemId] = res;
+      });
+
+      let cgpaList = [];
+      if (needsCgpaFallback) {
+        fetchTasks.push(
+          getCachedAllCgpa()
+            .then((list) => {
+              cgpaList = list;
+            })
+            .catch(() => []),
+        );
+      }
+
+      if (fetchTasks.length > 0) {
+        await Promise.allSettled(fetchTasks);
+      }
+
+      // 5. In-memory resolve any missing CR/GR instantly without any additional HTTP requests
+      const sharedContext = {
+        studentsList,
+        resultsMap,
+        cgpaList,
+      };
+
+      for (const sem of sortedSemesters) {
+        const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
+        if (!semData.cr) {
+          const autoCr = await computeAutoRepresentative(
+            sem,
+            sortedSemesters,
+            "cr",
+            sharedContext,
+          );
+          if (autoCr) semData.cr = autoCr;
+        }
+        if (!semData.gr) {
+          const autoGr = await computeAutoRepresentative(
+            sem,
+            sortedSemesters,
+            "gr",
+            sharedContext,
+          );
+          if (autoGr) semData.gr = autoGr;
+        }
+        map[sem.id] = semData;
+      }
 
       setSemesterTopData(map);
     } catch {
@@ -169,12 +243,16 @@ export default function TopStudents() {
       const res = await getSemesterTopStudents(semId);
       const semObj = semesters.find((s) => String(s.id) === String(semId));
       const semData = res.data || { cr: null, gr: null, metadataId: semId };
-      if (!semData.cr) {
-        const autoCr = await computeAutoRepresentative(semObj, semesters, "cr");
+      if (!semData.cr || !semData.gr) {
+        const [autoCr, autoGr] = await Promise.all([
+          !semData.cr
+            ? computeAutoRepresentative(semObj, semesters, "cr")
+            : Promise.resolve(semData.cr),
+          !semData.gr
+            ? computeAutoRepresentative(semObj, semesters, "gr")
+            : Promise.resolve(semData.gr),
+        ]);
         if (autoCr) semData.cr = autoCr;
-      }
-      if (!semData.gr) {
-        const autoGr = await computeAutoRepresentative(semObj, semesters, "gr");
         if (autoGr) semData.gr = autoGr;
       }
       setSemesterTopData((prev) => ({
@@ -213,15 +291,11 @@ export default function TopStudents() {
 
       const targetSemId = prevSem ? prevSem.id : semesterId;
 
-      const [studentsRes, cgpaRes, semResultsRes] = await Promise.allSettled([
-        getStudents(),
-        getAllCgpa(),
-        getSemesterResults(targetSemId),
+      const [allStudents, cgpaList, semResultsList] = await Promise.all([
+        getCachedStudents().catch(() => []),
+        getCachedAllCgpa().catch(() => []),
+        getCachedSemesterResults(targetSemId).catch(() => []),
       ]);
-
-      const allStudents = extractArray(studentsRes);
-      const cgpaList = extractArray(cgpaRes);
-      const semResultsList = extractArray(semResultsRes);
 
       const getRollNo = (s) =>
         s?.roll_no || s?.rollNo || s?.student_id || s?.id;
