@@ -14,7 +14,6 @@ import {
   Pencil,
   X,
   ArrowLeft,
-  ExternalLink,
   RotateCcw,
   Sparkles,
   UserCheck,
@@ -728,14 +727,6 @@ export default function TopStudents() {
                           : `${sem.semester} Semester`}
                       </span>
                     </div>
-                    <Link
-                      to={`/results/semester/${sem.id}`}
-                      className="btn btn-secondary btn-sm"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                    >
-                      <span>Full Semester Results</span>
-                      <ExternalLink size={14} />
-                    </Link>
                   </div>
 
                 <div className="top-students-grid" style={{ marginTop: 16 }}>
