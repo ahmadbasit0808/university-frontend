@@ -7,8 +7,7 @@ import { getSemesters } from "../api/semesters";
 import {
   getDashboardTopStudents,
   getSemesterTopStudents,
-  getSemesterResults,
-  getAllCgpa,
+  getCandidates,
   setTopStudent,
   clearTopStudent,
 } from "../api/results";
@@ -23,17 +22,6 @@ import {
 } from "lucide-react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
-
-import {
-  computeAutoRepresentative,
-  extractArray,
-  isMale,
-  isFemale,
-  getCachedStudents,
-  getCachedSemesterResults,
-  getCachedAllCgpa,
-  clearTopStudentsCache,
-} from "../utils/topStudentsHelper";
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -67,35 +55,17 @@ export default function Dashboard() {
     setSuccess("");
     try {
       await clearTopStudent(metaId, role).catch(() => {});
-      const activeSem =
-        semestersList.find((s) => String(s.id) === String(metaId)) ||
-        latestSemester;
 
-      let topRes = null;
-      if (!selectedSemesterId || selectedSemesterId === "latest") {
-        topRes = await getDashboardTopStudents().catch(() => null);
-      } else {
-        topRes = await getSemesterTopStudents(metaId).catch(() => null);
-      }
+      const topRes =
+        !selectedSemesterId || selectedSemesterId === "latest"
+          ? await getDashboardTopStudents().catch(() => null)
+          : await getSemesterTopStudents(metaId).catch(() => null);
 
-      let roleData = topRes?.data?.[role];
-
-      // If backend returned null/empty for this role, auto-calculate from previous semester GPA
-      if (!roleData || !roleData.roll_no) {
-        const autoStudent = await computeAutoRepresentative(
-          activeSem,
-          semestersList,
-          role,
-        );
-        if (autoStudent) {
-          await setTopStudent(metaId, autoStudent.roll_no, role).catch(() => {});
-          roleData = autoStudent;
-        }
-      }
+      const roleData = topRes?.data?.[role] || null;
 
       setTopStudents((prev) => ({
         ...prev,
-        [role]: roleData || null,
+        [role]: roleData,
       }));
 
       if (roleData) {
@@ -105,11 +75,7 @@ export default function Dashboard() {
           }`,
         );
       } else {
-        setError(
-          `No published results or GPA found for Semester ${
-            (parseInt(activeSem?.semester, 10) || 1) - 1
-          } to auto-assign ${role.toUpperCase()}. You can assign manually.`,
-        );
+        setSuccess(`${role.toUpperCase()} reset to auto`);
       }
       setTimeout(() => {
         setSuccess("");
@@ -123,47 +89,19 @@ export default function Dashboard() {
     }
   };
 
-  const loadTopStudents = async (
-    semId = selectedSemesterId,
-    currentSemesters = semestersList,
-    currentLatest = latestSemester,
-    preloadedStudents = null,
-  ) => {
+  const loadTopStudents = async (semId = selectedSemesterId) => {
     setTopStudentsLoading(true);
     try {
-      const topPromise =
+      const res =
         !semId || semId === "latest"
-          ? getDashboardTopStudents()
-          : getSemesterTopStudents(semId);
+          ? await getDashboardTopStudents()
+          : await getSemesterTopStudents(semId);
 
-      const res = await topPromise.catch(() => null);
-      let data = {
+      setTopStudents({
         metadataId: res?.data?.metadataId || (semId !== "latest" ? semId : null),
         cr: res?.data?.cr || null,
         gr: res?.data?.gr || null,
-      };
-
-      const activeSem =
-        currentSemesters.find((s) => String(s.id) === String(semId)) ||
-        (semId === "latest" ? currentLatest : null);
-
-      if (activeSem && (!data.cr || !data.gr)) {
-        const context = preloadedStudents
-          ? { studentsList: preloadedStudents }
-          : {};
-        const [autoCr, autoGr] = await Promise.all([
-          !data.cr
-            ? computeAutoRepresentative(activeSem, currentSemesters, "cr", context)
-            : Promise.resolve(data.cr),
-          !data.gr
-            ? computeAutoRepresentative(activeSem, currentSemesters, "gr", context)
-            : Promise.resolve(data.gr),
-        ]);
-        if (autoCr) data.cr = autoCr;
-        if (autoGr) data.gr = autoGr;
-      }
-
-      setTopStudents(data);
+      });
     } catch {
       setTopStudents({
         metadataId: semId !== "latest" ? semId : null,
@@ -181,20 +119,19 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const dashboardTopPromise = getDashboardTopStudents().catch(() => null);
-
     Promise.all([
-      getCachedStudents().catch(() => []),
+      getStudents(),
       getTeachers(),
       getCourses(),
       getSemesters(),
+      getDashboardTopStudents().catch(() => null),
     ])
-      .then(async ([studentsList, teachers, courses, semesters]) => {
+      .then(([students, teachers, courses, semesters, topRes]) => {
         setStats({
-          students: studentsList.length,
-          teachers: teachers.data.length,
-          courses: courses.data.length,
-          semesters: semesters.data.length,
+          students: students.data?.length || 0,
+          teachers: teachers.data?.length || 0,
+          courses: courses.data?.length || 0,
+          semesters: semesters.data?.length || 0,
         });
         const sem = semesters.data || [];
         const sorted = [...sem].sort((a, b) => {
@@ -212,34 +149,12 @@ export default function Dashboard() {
           setLatestSemester(latest);
         }
 
-        // Fast resolution of top students using already in-flight promise and loaded students
-        try {
-          const res = await dashboardTopPromise;
-          let data = {
-            metadataId: res?.data?.metadataId || null,
-            cr: res?.data?.cr || null,
-            gr: res?.data?.gr || null,
-          };
-          const activeSem = latest;
-          if (activeSem && (!data.cr || !data.gr)) {
-            const context = { studentsList };
-            const [autoCr, autoGr] = await Promise.all([
-              !data.cr
-                ? computeAutoRepresentative(activeSem, sorted, "cr", context)
-                : Promise.resolve(data.cr),
-              !data.gr
-                ? computeAutoRepresentative(activeSem, sorted, "gr", context)
-                : Promise.resolve(data.gr),
-            ]);
-            if (autoCr) data.cr = autoCr;
-            if (autoGr) data.gr = autoGr;
-          }
-          setTopStudents(data);
-        } catch {
-          setTopStudents({ metadataId: null, cr: null, gr: null });
-        } finally {
-          setTopStudentsLoading(false);
-        }
+        setTopStudents({
+          metadataId: topRes?.data?.metadataId || (latest ? latest.id : null),
+          cr: topRes?.data?.cr || null,
+          gr: topRes?.data?.gr || null,
+        });
+        setTopStudentsLoading(false);
       })
       .catch(() => {
         setError("Failed to load dashboard data");
@@ -258,97 +173,11 @@ export default function Dashboard() {
     setCandidateSearch("");
     setLoadingCandidates(true);
     try {
-      const activeSem =
-        semestersList.find((s) => String(s.id) === String(metaId)) ||
-        latestSemester;
-      const semNum =
-        parseInt(activeSem?.semester, 10) ||
-        parseInt(String(activeSem?.semester || "").match(/\d+/)?.[0], 10) ||
-        1;
-      const prevSem =
-        semNum > 1
-          ? semestersList.find((s) => {
-              const n =
-                parseInt(s.semester, 10) ||
-                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
-                0;
-              return n === semNum - 1;
-            })
-          : null;
-
-      const targetSemId = prevSem ? prevSem.id : metaId;
-
-      const [allStudents, cgpaList, semResultsList] = await Promise.all([
-        getCachedStudents().catch(() => []),
-        getCachedAllCgpa().catch(() => []),
-        getCachedSemesterResults(targetSemId).catch(() => []),
-      ]);
-
-      const getRollNo = (s) =>
-        s?.roll_no || s?.rollNo || s?.student_id || s?.id;
-      const getName = (s) =>
-        s?.name ||
-        s?.student_name ||
-        s?.full_name ||
-        (getRollNo(s) ? `Student ${getRollNo(s)}` : "");
-      const getGender = (s) => s?.gender || s?.sex || null;
-      const getGpa = (s) => s?.gpa ?? s?.obtained_gpa ?? null;
-      const getCgpa = (s) => s?.cgpa ?? null;
-
-      // Merge into a comprehensive student map
-      const studentMap = new Map();
-
-      const addStudentToMap = (s, defaultGpa = null, defaultCgpa = null) => {
-        if (!s) return;
-        const roll = getRollNo(s);
-        if (!roll) return;
-        const key = String(roll).trim();
-        const existing = studentMap.get(key) || {
-          roll_no: key,
-          name: getName(s),
-          gender: getGender(s),
-          gpa: defaultGpa,
-          cgpa: defaultCgpa,
-        };
-        const name = getName(s);
-        if (name && (!existing.name || existing.name.startsWith("Student "))) {
-          existing.name = name;
-        }
-        const gender = getGender(s);
-        if (gender && !existing.gender) existing.gender = gender;
-        const gpa = getGpa(s) ?? defaultGpa;
-        if (gpa !== null && gpa !== undefined) existing.gpa = gpa;
-        const cgpa = getCgpa(s) ?? defaultCgpa;
-        if (cgpa !== null && cgpa !== undefined) existing.cgpa = cgpa;
-        studentMap.set(key, existing);
-      };
-
-      allStudents.forEach((s) => addStudentToMap(s));
-      cgpaList.forEach((s) => addStudentToMap(s, null, s?.cgpa));
-      semResultsList.forEach((s) => addStudentToMap(s, s?.gpa, s?.cgpa));
-
-      const filterFn = role === "cr" ? isMale : isFemale;
-      let list = Array.from(studentMap.values()).filter((s) =>
-        filterFn(s.gender),
-      );
-
-      if (list.length === 0 && studentMap.size > 0) {
-        list = Array.from(studentMap.values());
-      }
-
-      list.sort((a, b) => {
-        const scoreA = a.gpa !== null && a.gpa !== undefined ? Number(a.gpa) : -1;
-        const scoreB = b.gpa !== null && b.gpa !== undefined ? Number(b.gpa) : -1;
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        const cgpaA = Number(a.cgpa ?? -1);
-        const cgpaB = Number(b.cgpa ?? -1);
-        if (cgpaB !== cgpaA) return cgpaB - cgpaA;
-        return String(a.roll_no || "").localeCompare(String(b.roll_no || ""));
-      });
-
-      setCandidates(list);
+      const res = await getCandidates(metaId, role);
+      setCandidates(res.data || []);
     } catch (err) {
       console.error("Failed to load candidates:", err);
+      setError("Failed to load candidates");
       setCandidates([]);
     } finally {
       setLoadingCandidates(false);

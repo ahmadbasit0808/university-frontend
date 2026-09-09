@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getSemesters } from "../api/semesters";
-import { getStudents } from "../api/students";
 import {
+  getAllTopStudents,
   getSemesterTopStudents,
-  getAllCgpa,
-  getSemesterResults,
+  getCandidates,
   setTopStudent,
   clearTopStudent,
 } from "../api/results";
@@ -20,17 +19,6 @@ import {
 } from "lucide-react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
-
-import {
-  computeAutoRepresentative,
-  extractArray,
-  isMale,
-  isFemale,
-  getCachedStudents,
-  getCachedSemesterResults,
-  getCachedAllCgpa,
-  clearTopStudentsCache,
-} from "../utils/topStudentsHelper";
 
 export default function TopStudents() {
   const [semesters, setSemesters] = useState([]);
@@ -55,24 +43,14 @@ export default function TopStudents() {
     setSuccess("");
     try {
       await clearTopStudent(semesterId, role).catch(() => {});
-      const semObj = semesters.find((s) => String(s.id) === String(semesterId));
-      let topRes = await getSemesterTopStudents(semesterId).catch(() => null);
-      let roleData = topRes?.data?.[role];
-
-      // If backend returned null/empty for this role, auto-calculate from previous semester GPA
-      if (!roleData || !roleData.roll_no) {
-        const autoStudent = await computeAutoRepresentative(semObj, semesters, role);
-        if (autoStudent) {
-          await setTopStudent(semesterId, autoStudent.roll_no, role).catch(() => {});
-          roleData = autoStudent;
-        }
-      }
+      const topRes = await getSemesterTopStudents(semesterId).catch(() => null);
+      const roleData = topRes?.data?.[role] || null;
 
       setSemesterTopData((prev) => ({
         ...prev,
         [semesterId]: {
           ...(prev[semesterId] || {}),
-          [role]: roleData || null,
+          [role]: roleData,
         },
       }));
 
@@ -83,11 +61,7 @@ export default function TopStudents() {
           }`,
         );
       } else {
-        setError(
-          `No published results or GPA found for Semester ${
-            (parseInt(semObj?.semester, 10) || 1) - 1
-          } to auto-assign ${role.toUpperCase()}. You can assign manually.`,
-        );
+        setSuccess(`${role.toUpperCase()} reset to auto`);
       }
       setTimeout(() => {
         setSuccess("");
@@ -104,10 +78,9 @@ export default function TopStudents() {
   const fetchAllTopStudents = async () => {
     try {
       setLoading(true);
-      // 1. Fetch semesters and pre-warm students in parallel
-      const [semRes, studentsList] = await Promise.all([
+      const [semRes, topRes] = await Promise.all([
         getSemesters(),
-        getCachedStudents().catch(() => []),
+        getAllTopStudents(),
       ]);
 
       const semList = semRes.data || [];
@@ -117,116 +90,9 @@ export default function TopStudents() {
         return nA - nB;
       });
       setSemesters(sortedSemesters);
-
-      // 2. Fetch top-student overrides for all semesters in parallel
-      const topResults = await Promise.allSettled(
-        sortedSemesters.map(async (sem) => {
-          try {
-            const res = await getSemesterTopStudents(sem.id);
-            return {
-              semesterId: sem.id,
-              data: res.data || { cr: null, gr: null, metadataId: sem.id },
-            };
-          } catch {
-            return {
-              semesterId: sem.id,
-              data: { cr: null, gr: null, metadataId: sem.id },
-            };
-          }
-        }),
-      );
-
-      const map = {};
-      topResults.forEach((res) => {
-        if (res.status === "fulfilled") {
-          map[res.value.semesterId] = res.value.data;
-        }
-      });
-
-      // 3. Identify which previous semesters actually need results for auto-resolving missing CR/GR
-      const neededPrevSemIds = new Set();
-      let needsCgpaFallback = false;
-
-      sortedSemesters.forEach((sem) => {
-        const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
-        if (!semData.cr || !semData.gr) {
-          const semNum =
-            parseInt(sem.semester, 10) ||
-            parseInt(String(sem.semester || "").match(/\d+/)?.[0], 10) ||
-            1;
-          if (semNum > 1) {
-            const prevSem = sortedSemesters.find((s) => {
-              const n =
-                parseInt(s.semester, 10) ||
-                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
-                0;
-              return n === semNum - 1;
-            });
-            if (prevSem && prevSem.id) {
-              neededPrevSemIds.add(prevSem.id);
-            } else {
-              needsCgpaFallback = true;
-            }
-          } else {
-            needsCgpaFallback = true;
-          }
-        }
-      });
-
-      // 4. Batch fetch unique required semester results and CGPA in parallel
-      const resultsMap = {};
-      const fetchTasks = Array.from(neededPrevSemIds).map(async (prevSemId) => {
-        const res = await getCachedSemesterResults(prevSemId).catch(() => []);
-        resultsMap[prevSemId] = res;
-      });
-
-      let cgpaList = [];
-      if (needsCgpaFallback) {
-        fetchTasks.push(
-          getCachedAllCgpa()
-            .then((list) => {
-              cgpaList = list;
-            })
-            .catch(() => []),
-        );
-      }
-
-      if (fetchTasks.length > 0) {
-        await Promise.allSettled(fetchTasks);
-      }
-
-      // 5. In-memory resolve any missing CR/GR instantly without any additional HTTP requests
-      const sharedContext = {
-        studentsList,
-        resultsMap,
-        cgpaList,
-      };
-
-      for (const sem of sortedSemesters) {
-        const semData = map[sem.id] || { cr: null, gr: null, metadataId: sem.id };
-        if (!semData.cr) {
-          const autoCr = await computeAutoRepresentative(
-            sem,
-            sortedSemesters,
-            "cr",
-            sharedContext,
-          );
-          if (autoCr) semData.cr = autoCr;
-        }
-        if (!semData.gr) {
-          const autoGr = await computeAutoRepresentative(
-            sem,
-            sortedSemesters,
-            "gr",
-            sharedContext,
-          );
-          if (autoGr) semData.gr = autoGr;
-        }
-        map[sem.id] = semData;
-      }
-
-      setSemesterTopData(map);
-    } catch {
+      setSemesterTopData(topRes.data || {});
+    } catch (err) {
+      console.error("Failed to load semester top students data:", err);
       setError("Failed to load semester top students data.");
     } finally {
       setLoading(false);
@@ -240,23 +106,9 @@ export default function TopStudents() {
   const refreshSemester = async (semId) => {
     try {
       const res = await getSemesterTopStudents(semId);
-      const semObj = semesters.find((s) => String(s.id) === String(semId));
-      const semData = res.data || { cr: null, gr: null, metadataId: semId };
-      if (!semData.cr || !semData.gr) {
-        const [autoCr, autoGr] = await Promise.all([
-          !semData.cr
-            ? computeAutoRepresentative(semObj, semesters, "cr")
-            : Promise.resolve(semData.cr),
-          !semData.gr
-            ? computeAutoRepresentative(semObj, semesters, "gr")
-            : Promise.resolve(semData.gr),
-        ]);
-        if (autoCr) semData.cr = autoCr;
-        if (autoGr) semData.gr = autoGr;
-      }
       setSemesterTopData((prev) => ({
         ...prev,
-        [semId]: semData,
+        [semId]: res.data || { cr: null, gr: null, metadataId: semId },
       }));
     } catch {
       // ignore
@@ -270,97 +122,11 @@ export default function TopStudents() {
     setCandidateSearch("");
     setLoadingCandidates(true);
     try {
-      const currentSem = semesters.find(
-        (s) => String(s.id) === String(semesterId),
-      );
-      const semNum =
-        parseInt(currentSem?.semester, 10) ||
-        parseInt(String(currentSem?.semester || "").match(/\d+/)?.[0], 10) ||
-        1;
-      const prevSem =
-        semNum > 1
-          ? semesters.find((s) => {
-              const n =
-                parseInt(s.semester, 10) ||
-                parseInt(String(s.semester || "").match(/\d+/)?.[0], 10) ||
-                0;
-              return n === semNum - 1;
-            })
-          : null;
-
-      const targetSemId = prevSem ? prevSem.id : semesterId;
-
-      const [allStudents, cgpaList, semResultsList] = await Promise.all([
-        getCachedStudents().catch(() => []),
-        getCachedAllCgpa().catch(() => []),
-        getCachedSemesterResults(targetSemId).catch(() => []),
-      ]);
-
-      const getRollNo = (s) =>
-        s?.roll_no || s?.rollNo || s?.student_id || s?.id;
-      const getName = (s) =>
-        s?.name ||
-        s?.student_name ||
-        s?.full_name ||
-        (getRollNo(s) ? `Student ${getRollNo(s)}` : "");
-      const getGender = (s) => s?.gender || s?.sex || null;
-      const getGpa = (s) => s?.gpa ?? s?.obtained_gpa ?? null;
-      const getCgpa = (s) => s?.cgpa ?? null;
-
-      // Merge into a comprehensive student map
-      const studentMap = new Map();
-
-      const addStudentToMap = (s, defaultGpa = null, defaultCgpa = null) => {
-        if (!s) return;
-        const roll = getRollNo(s);
-        if (!roll) return;
-        const key = String(roll).trim();
-        const existing = studentMap.get(key) || {
-          roll_no: key,
-          name: getName(s),
-          gender: getGender(s),
-          gpa: defaultGpa,
-          cgpa: defaultCgpa,
-        };
-        const name = getName(s);
-        if (name && (!existing.name || existing.name.startsWith("Student "))) {
-          existing.name = name;
-        }
-        const gender = getGender(s);
-        if (gender && !existing.gender) existing.gender = gender;
-        const gpa = getGpa(s) ?? defaultGpa;
-        if (gpa !== null && gpa !== undefined) existing.gpa = gpa;
-        const cgpa = getCgpa(s) ?? defaultCgpa;
-        if (cgpa !== null && cgpa !== undefined) existing.cgpa = cgpa;
-        studentMap.set(key, existing);
-      };
-
-      allStudents.forEach((s) => addStudentToMap(s));
-      cgpaList.forEach((s) => addStudentToMap(s, null, s?.cgpa));
-      semResultsList.forEach((s) => addStudentToMap(s, s?.gpa, s?.cgpa));
-
-      const filterFn = role === "cr" ? isMale : isFemale;
-      let list = Array.from(studentMap.values()).filter((s) =>
-        filterFn(s.gender),
-      );
-
-      if (list.length === 0 && studentMap.size > 0) {
-        list = Array.from(studentMap.values());
-      }
-
-      list.sort((a, b) => {
-        const scoreA = a.gpa !== null && a.gpa !== undefined ? Number(a.gpa) : -1;
-        const scoreB = b.gpa !== null && b.gpa !== undefined ? Number(b.gpa) : -1;
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        const cgpaA = Number(a.cgpa ?? -1);
-        const cgpaB = Number(b.cgpa ?? -1);
-        if (cgpaB !== cgpaA) return cgpaB - cgpaA;
-        return String(a.roll_no || "").localeCompare(String(b.roll_no || ""));
-      });
-
-      setCandidates(list);
+      const res = await getCandidates(semesterId, role);
+      setCandidates(res.data || []);
     } catch (err) {
       console.error("Failed to load candidates:", err);
+      setError("Failed to load candidates");
       setCandidates([]);
     } finally {
       setLoadingCandidates(false);
