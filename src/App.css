@@ -2288,8 +2288,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
   gap: 12px;
 }
 
@@ -3764,7 +3764,7 @@
   align-items: center;
   gap: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .sp-info-item:last-child {
