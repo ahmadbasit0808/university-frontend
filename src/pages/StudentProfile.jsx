@@ -99,25 +99,27 @@ export default function StudentProfile() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="back-link"
-          >
-            &larr; Back
-          </button>
-          <h1>{student.name}</h1>
-          <p className="text-muted">Roll No: {student.roll_no}</p>
-        </div>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <Link to={`/estimate-cgpa?rollNo=${rollNo}`} className="btn btn-secondary">
-            <Calculator size={16} />
-            <span>Estimate CGPA</span>
-          </Link>
-          <Link to={`/results/${rollNo}`} className="btn btn-primary">
-            View Full Transcript
-          </Link>
+      <div className="page-hero-card">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-link"
+        >
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <h1>{student.name}</h1>
+            <p className="text-muted">Roll No: {student.roll_no}</p>
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <Link to={`/estimate-cgpa?rollNo=${rollNo}`} className="btn btn-secondary">
+              <Calculator size={16} />
+              <span>Estimate CGPA</span>
+            </Link>
+            <Link to={`/results/${rollNo}`} className="btn btn-primary">
+              View Full Transcript
+            </Link>
+          </div>
         </div>
       </div>
 

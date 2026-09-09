@@ -135,23 +135,25 @@ export default function StudentSemesterResult() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <button onClick={() => navigate(-1)} className="back-link">
-            &larr; Back
-          </button>
-          <h1>Result — {student?.name}</h1>
-          <p className="text-muted">
-            Roll No: {student?.roll_no} | {student?.semester} Semester (
-            {student?.session})
-          </p>
-        </div>
-        <div className="gpa-badge-large">
-          GPA: <strong>{parseFloat(student?.gpa || 0).toFixed(2)}</strong>
-          <span className="gpts-detail">
-            ({parseFloat(student?.obtained_gpts || 0).toFixed(1)} /{" "}
-            {parseFloat(student?.total_gpts || 0).toFixed(1)} GPTs)
-          </span>
+      <div className="page-hero-card">
+        <button onClick={() => navigate(-1)} className="back-link">
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <h1>Result — {student?.name}</h1>
+            <p className="text-muted">
+              Roll No: {student?.roll_no} | {student?.semester} (
+              {student?.session})
+            </p>
+          </div>
+          <div className="gpa-badge-large">
+            GPA: <strong>{parseFloat(student?.gpa || 0).toFixed(2)}</strong>
+            <span className="gpts-detail">
+              ({parseFloat(student?.obtained_gpts || 0).toFixed(1)} /{" "}
+              {parseFloat(student?.total_gpts || 0).toFixed(1)} GPTs)
+            </span>
+          </div>
         </div>
       </div>
 

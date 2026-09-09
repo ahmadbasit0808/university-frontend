@@ -126,16 +126,18 @@ export default function TeacherProfile() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="back-link"
-          >
-            &larr; Back
-          </button>
-          <h1>{teacher.name}</h1>
-          <p className="text-muted">{teacher.designation || "Teacher"}</p>
+      <div className="page-hero-card">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-link"
+        >
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <h1>{teacher.name}</h1>
+            <p className="text-muted">{teacher.designation || "Teacher"}</p>
+          </div>
         </div>
       </div>
 

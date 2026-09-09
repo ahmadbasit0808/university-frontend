@@ -125,25 +125,27 @@ export default function SemesterCourses() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="back-link"
-          >
-            &larr; Back
-          </button>
-          <h1>
-            {semester
-              ? `${semester.semester} (${semester.session})`
-              : "Semester Courses"}
-          </h1>
+      <div className="page-hero-card">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-link"
+        >
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <h1>
+              {semester
+                ? `${semester.semester} (${semester.session})`
+                : "Semester Courses"}
+            </h1>
+          </div>
+          {isAuthenticated && (
+            <button className="btn btn-primary" onClick={openAssign}>
+              + Assign Course
+            </button>
+          )}
         </div>
-        {isAuthenticated && (
-          <button className="btn btn-primary" onClick={openAssign}>
-            + Assign Course
-          </button>
-        )}
       </div>
       {toast && <Toast message={toast} onDone={() => setToast("")} />}
       {error && <div className="alert alert-error">{error}</div>}

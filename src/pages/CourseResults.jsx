@@ -209,23 +209,25 @@ export default function CourseResultsPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          {(initSemId || initScId) && (
-            <button
-              onClick={() => navigate(-1)}
-              className="back-link"
-            >
-              &larr; Back
-            </button>
-          )}
-          <h1>Course Marks</h1>
-        </div>
-        {isAuthenticated && selectedSCId && (
-          <button className="btn btn-primary" onClick={() => openModal()}>
-            + Enter Marks
+      <div className="page-hero-card">
+        {(initSemId || initScId) && (
+          <button
+            onClick={() => navigate(-1)}
+            className="back-link"
+          >
+            &larr; Back
           </button>
         )}
+        <div className="page-header">
+          <div>
+            <h1>Course Marks</h1>
+          </div>
+          {isAuthenticated && selectedSCId && (
+            <button className="btn btn-primary" onClick={() => openModal()}>
+              + Enter Marks
+            </button>
+          )}
+        </div>
       </div>
       {toast && <Toast message={toast} onDone={() => setToast("")} />}
       {error && <div className="alert alert-error">{error}</div>}

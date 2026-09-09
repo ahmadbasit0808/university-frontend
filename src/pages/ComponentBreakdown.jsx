@@ -81,17 +81,19 @@ export default function ComponentBreakdown() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <Link to="/course-results" className="back-link">
-            &larr; Back to Marks Entry
-          </Link>
-          <h1>Component Breakdown</h1>
-          <p className="text-muted">Course Result ID: {courseResultId}</p>
+      <div className="page-hero-card">
+        <Link to="/course-results" className="back-link">
+          &larr; Back to Marks Entry
+        </Link>
+        <div className="page-header">
+          <div>
+            <h1>Component Breakdown</h1>
+            <p className="text-muted">Course Result ID: {courseResultId}</p>
+          </div>
+          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+            + Add Component
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-          + Add Component
-        </button>
       </div>
       {error && <div className="alert alert-error">{error}</div>}
 

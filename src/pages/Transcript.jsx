@@ -111,36 +111,38 @@ export default function Transcript() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <Link to="/results" className="back-link">
-            &larr; Back to Results
-          </Link>
-          <h1>Transcript — {data.student?.name}</h1>
-          <p className="text-muted">Roll No: {data.student?.roll_no}</p>
-        </div>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-          <Link
-            to={`/estimate-cgpa?rollNo=${data.student?.roll_no || rollNo}`}
-            className="btn btn-secondary"
-          >
-            <Calculator height={18} width={18} />
-            <span>Estimate Future CGPA</span>
-          </Link>
-          <button
-            className="btn btn-primary"
-            onClick={downloadPDF}
-            disabled={pdfLoading}
-          >
-            {pdfLoading ? (
-              "Generating PDF..."
-            ) : (
-              <>
-                <Download height={18} width={18} />
-                <span>Download Pdf</span>
-              </>
-            )}
-          </button>
+      <div className="page-hero-card">
+        <Link to="/results" className="back-link">
+          &larr; Back to Results
+        </Link>
+        <div className="page-header">
+          <div>
+            <h1>Transcript — {data.student?.name}</h1>
+            <p className="text-muted">Roll No: {data.student?.roll_no}</p>
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <Link
+              to={`/estimate-cgpa?rollNo=${data.student?.roll_no || rollNo}`}
+              className="btn btn-secondary"
+            >
+              <Calculator height={18} width={18} />
+              <span>Estimate Future CGPA</span>
+            </Link>
+            <button
+              className="btn btn-primary"
+              onClick={downloadPDF}
+              disabled={pdfLoading}
+            >
+              {pdfLoading ? (
+                "Generating PDF..."
+              ) : (
+                <>
+                  <Download height={18} width={18} />
+                  <span>Download Pdf</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

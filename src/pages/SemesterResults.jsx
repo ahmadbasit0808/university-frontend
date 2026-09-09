@@ -114,29 +114,31 @@ export default function SemesterResults() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="back-link"
-          >
-            &larr; Back
-          </button>
-          <h1>
-            {semester
-              ? `${semester.semester} (${semester.session})`
-              : "Semester Results"}
-          </h1>
+      <div className="page-hero-card">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-link"
+        >
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <h1>
+              {semester
+                ? `${semester.semester} (${semester.session})`
+                : "Semester Results"}
+            </h1>
+          </div>
+          {isAuthenticated && (
+            <button
+              className="btn btn-primary"
+              onClick={handlePublish}
+              disabled={publishing}
+            >
+              {publishing ? "Publishing..." : "Publish Results"}
+            </button>
+          )}
         </div>
-        {isAuthenticated && (
-          <button
-            className="btn btn-primary"
-            onClick={handlePublish}
-            disabled={publishing}
-          >
-            {publishing ? "Publishing..." : "Publish Results"}
-          </button>
-        )}
       </div>
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}

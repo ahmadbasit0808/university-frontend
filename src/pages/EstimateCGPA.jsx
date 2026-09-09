@@ -834,48 +834,50 @@ export default function EstimateCGPA() {
   return (
     <div className="page estimate-cgpa-page">
       {/* Header */}
-      <div className="page-header">
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="back-link"
-          >
-            &larr; Back
-          </button>
-          <div className="estimator-title-row">
-            <span className="estimator-badge-icon">
-              <Calculator size={24} />
-            </span>
-            <div>
-              <h1>CGPA Estimator & Simulator</h1>
-              <p className="text-muted">
-                Estimate marks for your latest semester courses and calculate improvements from repeated subjects.
-              </p>
+      <div className="page-hero-card">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-link"
+        >
+          &larr; Back
+        </button>
+        <div className="page-header">
+          <div>
+            <div className="estimator-title-row">
+              <span className="estimator-badge-icon">
+                <Calculator size={24} />
+              </span>
+              <div>
+                <h1>CGPA Estimator & Simulator</h1>
+                <p className="text-muted">
+                  Estimate marks for your latest semester courses and calculate improvements from repeated subjects.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {transcriptData && (
-          <div className="estimator-header-actions">
-            {lastSaved && (
-              <span className="auto-save-pill" title="Estimations saved automatically in browser storage">
-                <CheckCircle2 size={13} />
-                <span>Auto-Saved</span>
-              </span>
-            )}
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={handleResetSimulation}
-              title="Reset simulation back to default and clear browser storage"
-            >
-              <RotateCcw size={16} />
-              <span>Reset Marks</span>
-            </button>
-            <Link to={`/results/${selectedRollNo}`} className="btn btn-outline btn-sm">
-              View Transcript
-            </Link>
-          </div>
-        )}
+          {transcriptData && (
+            <div className="estimator-header-actions">
+              {lastSaved && (
+                <span className="auto-save-pill" title="Estimations saved automatically in browser storage">
+                  <CheckCircle2 size={13} />
+                  <span>Auto-Saved</span>
+                </span>
+              )}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleResetSimulation}
+                title="Reset simulation back to default and clear browser storage"
+              >
+                <RotateCcw size={14} />
+                <span>Reset Default</span>
+              </button>
+              <Link to={`/results/${selectedRollNo}`} className="btn btn-outline btn-sm">
+                View Transcript
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
