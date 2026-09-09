@@ -482,7 +482,8 @@
 .notification-form-wrapper {
   padding: 18px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg);}
+  background: var(--bg);
+}
 
 .notification-form {
   display: flex;
@@ -2196,7 +2197,7 @@
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 18px;
   margin-bottom: 24px;
   box-shadow: var(--shadow);
 }
@@ -2204,7 +2205,7 @@
 .transcript-student-info h2 {
   font-size: 22px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   padding-bottom: 12px;
   border-bottom: 2px solid var(--primary);
   color: var(--text);
@@ -5918,7 +5919,8 @@
 
 
 
-
+
+
 
 /* ============================
    THEME TOGGLES
