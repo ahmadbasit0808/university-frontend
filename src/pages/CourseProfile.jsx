@@ -1190,8 +1190,8 @@ export default function CourseProfile() {
                     style={{
                       fontSize: "11px",
                       fontWeight: 700,
-                      color: "#2563eb",
-                      background: "#eff6ff",
+                      color: "var(--info)",
+                      background: "var(--info-light)",
                       padding: "2px 8px",
                       borderRadius: "10px",
                     }}
@@ -1201,7 +1201,7 @@ export default function CourseProfile() {
                 )}
               </div>
             </div>
-            {renderBookCards(textbooks, "#2563eb", "#eff6ff")}
+            {renderBookCards(textbooks, "var(--info)", "var(--info-light)")}
           </div>
         )}
 
@@ -1226,8 +1226,8 @@ export default function CourseProfile() {
                     style={{
                       fontSize: "11px",
                       fontWeight: 700,
-                      color: "#059669",
-                      background: "#d1fae5",
+                      color: "var(--success)",
+                      background: "var(--gpa-excellent-bg)",
                       padding: "2px 8px",
                       borderRadius: "10px",
                     }}
@@ -1238,7 +1238,7 @@ export default function CourseProfile() {
                 )}
               </div>
             </div>
-            {renderBookCards(referenceMaterials, "#059669", "#ecfdf5")}
+            {renderBookCards(referenceMaterials, "var(--success)", "var(--gpa-excellent-bg)")}
           </div>
         )}
 

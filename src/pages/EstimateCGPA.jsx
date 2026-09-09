@@ -70,6 +70,7 @@ export default function EstimateCGPA() {
   const [selectedRollNo, setSelectedRollNo] = useState(initialRollNo);
   const [studentSearch, setStudentSearch] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [studentActiveIndex, setStudentActiveIndex] = useState(-1);
   const [transcriptData, setTranscriptData] = useState(null);
   const [loadingStudent, setLoadingStudent] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -86,12 +87,15 @@ export default function EstimateCGPA() {
   const [repeatSelectedCourses, setRepeatSelectedCourses] = useState([]);
   const [repeatSearchQuery, setRepeatSearchQuery] = useState("");
   const [showRepeatDropdown, setShowRepeatDropdown] = useState(false);
+  const [repeatActiveIndex, setRepeatActiveIndex] = useState(-1);
 
   // Target CGPA calculator
   const [targetCgpa, setTargetCgpa] = useState("");
 
   const searchWrapperRef = useRef(null);
   const repeatWrapperRef = useRef(null);
+  const studentListRef = useRef(null);
+  const repeatListRef = useRef(null);
 
   // Fetch initial system data
   useEffect(() => {
@@ -395,14 +399,17 @@ export default function EstimateCGPA() {
     function handleClickOutside(e) {
       if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
         setShowSearchDropdown(false);
+        setStudentActiveIndex(-1);
       }
       if (repeatWrapperRef.current && !repeatWrapperRef.current.contains(e.target)) {
         setShowRepeatDropdown(false);
+        setRepeatActiveIndex(-1);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
 
   // Grade conversion helper
   const getGradeInfo = (marks) => {
@@ -622,6 +629,34 @@ export default function EstimateCGPA() {
       .slice(0, 10);
   }, [studentSearch, students]);
 
+  // Reset keyboard active indices when search queries change
+  useEffect(() => {
+    setStudentActiveIndex(-1);
+  }, [studentSearch, filteredStudents]);
+
+  useEffect(() => {
+    setRepeatActiveIndex(-1);
+  }, [repeatSearchQuery, filteredRepeatCourses]);
+
+  // Auto-scroll keyboard highlighted dropdown items into view
+  useEffect(() => {
+    if (studentActiveIndex >= 0 && studentListRef.current) {
+      const activeEl = studentListRef.current.children[studentActiveIndex];
+      if (activeEl && typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [studentActiveIndex]);
+
+  useEffect(() => {
+    if (repeatActiveIndex >= 0 && repeatListRef.current) {
+      const activeEl = repeatListRef.current.children[repeatActiveIndex];
+      if (activeEl && typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [repeatActiveIndex]);
+
   // Handle switching active semester from dropdown
   const handleSemesterChange = (semesterId) => {
     const sem = availableSemesters.find((s) => s.id === parseInt(semesterId, 10) || s.id === semesterId);
@@ -667,8 +702,18 @@ export default function EstimateCGPA() {
     );
   };
 
+  // Student selection handler
+  const handleSelectStudent = (student) => {
+    if (!student) return;
+    setSelectedRollNo(student.roll_no);
+    setStudentSearch("");
+    setShowSearchDropdown(false);
+    setStudentActiveIndex(-1);
+  };
+
   // Repeat courses handlers
   const handleAddRepeatCourse = (sub) => {
+    if (!sub) return;
     setRepeatSelectedCourses((prev) => [
       ...prev,
       {
@@ -678,6 +723,7 @@ export default function EstimateCGPA() {
     ]);
     setRepeatSearchQuery("");
     setShowRepeatDropdown(false);
+    setRepeatActiveIndex(-1);
   };
 
   const handleUpdateRepeatMarks = (uniqueKey, marks) => {
@@ -856,6 +902,28 @@ export default function EstimateCGPA() {
                 setShowSearchDropdown(true);
               }}
               onFocus={() => setShowSearchDropdown(true)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  if (!showSearchDropdown) setShowSearchDropdown(true);
+                  setStudentActiveIndex((i) => Math.min(i + 1, filteredStudents.length - 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setStudentActiveIndex((i) => Math.max(i - 1, 0));
+                } else if (e.key === "Enter") {
+                  if (studentActiveIndex >= 0 && filteredStudents[studentActiveIndex]) {
+                    e.preventDefault();
+                    handleSelectStudent(filteredStudents[studentActiveIndex]);
+                  } else if (filteredStudents.length > 0 && showSearchDropdown && studentSearch.trim()) {
+                    e.preventDefault();
+                    handleSelectStudent(filteredStudents[0]);
+                  }
+                } else if (e.key === "Escape") {
+                  setStudentSearch("");
+                  setShowSearchDropdown(false);
+                  setStudentActiveIndex(-1);
+                }
+              }}
               autoComplete="off"
             />
             {studentSearch && (
@@ -870,17 +938,14 @@ export default function EstimateCGPA() {
           </div>
 
           {showSearchDropdown && (
-            <ul className="student-search-dropdown-menu">
+            <ul className="student-search-dropdown-menu" ref={studentListRef}>
               {filteredStudents.length > 0 ? (
-                filteredStudents.map((s) => (
+                filteredStudents.map((s, idx) => (
                   <li
                     key={s.roll_no}
-                    className={`dropdown-item ${s.roll_no === selectedRollNo ? "active" : ""}`}
-                    onMouseDown={() => {
-                      setSelectedRollNo(s.roll_no);
-                      setStudentSearch("");
-                      setShowSearchDropdown(false);
-                    }}
+                    className={`dropdown-item ${idx === studentActiveIndex ? "active" : s.roll_no === selectedRollNo ? "selected" : ""}`}
+                    onMouseDown={() => handleSelectStudent(s)}
+                    onMouseEnter={() => setStudentActiveIndex(idx)}
                   >
                     <span className="dropdown-roll">{s.roll_no}</span>
                     <span className="dropdown-name">{s.name}</span>
@@ -1286,6 +1351,28 @@ export default function EstimateCGPA() {
                     setShowRepeatDropdown(true);
                   }}
                   onFocus={() => setShowRepeatDropdown(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      if (!showRepeatDropdown) setShowRepeatDropdown(true);
+                      setRepeatActiveIndex((i) => Math.min(i + 1, filteredRepeatCourses.length - 1));
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setRepeatActiveIndex((i) => Math.max(i - 1, 0));
+                    } else if (e.key === "Enter") {
+                      if (repeatActiveIndex >= 0 && filteredRepeatCourses[repeatActiveIndex]) {
+                        e.preventDefault();
+                        handleAddRepeatCourse(filteredRepeatCourses[repeatActiveIndex]);
+                      } else if (filteredRepeatCourses.length > 0 && showRepeatDropdown && repeatSearchQuery.trim()) {
+                        e.preventDefault();
+                        handleAddRepeatCourse(filteredRepeatCourses[0]);
+                      }
+                    } else if (e.key === "Escape") {
+                      setRepeatSearchQuery("");
+                      setShowRepeatDropdown(false);
+                      setRepeatActiveIndex(-1);
+                    }
+                  }}
                 />
                 {repeatSearchQuery && (
                   <button
@@ -1300,13 +1387,14 @@ export default function EstimateCGPA() {
 
               {/* Autocomplete Dropdown for Repeat Courses */}
               {showRepeatDropdown && (
-                <ul className="repeat-dropdown-list">
+                <ul className="repeat-dropdown-list" ref={repeatListRef}>
                   {filteredRepeatCourses.length > 0 ? (
-                    filteredRepeatCourses.map((c) => (
+                    filteredRepeatCourses.map((c, idx) => (
                       <li
                         key={c.uniqueKey}
-                        className="repeat-dropdown-item"
+                        className={`repeat-dropdown-item ${idx === repeatActiveIndex ? "active" : ""}`}
                         onMouseDown={() => handleAddRepeatCourse(c)}
+                        onMouseEnter={() => setRepeatActiveIndex(idx)}
                       >
                         <div className="repeat-item-left">
                           <span className="course-code-badge repeat-code">{c.courseCode}</span>

@@ -232,24 +232,35 @@ export default function StudentProfile() {
                   }))}
                   margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--border)" />
                   <YAxis
                     domain={[2, 4]}
                     ticks={[
                       2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 3.1,
                       3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4,
                     ]}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 12, fill: "var(--text-muted)" }}
+                    stroke="var(--border)"
                   />
-                  <Tooltip formatter={(val) => [`${val}`, "GPA"]} />
-                  <ReferenceLine y={2} stroke="#fca5a5" strokeDasharray="4 4" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card-bg-elevated)",
+                      borderColor: "var(--border)",
+                      borderRadius: "var(--radius)",
+                      color: "var(--text)",
+                    }}
+                    itemStyle={{ color: "var(--primary)" }}
+                    labelStyle={{ color: "var(--text-secondary)" }}
+                    formatter={(val) => [`${val}`, "GPA"]}
+                  />
+                  <ReferenceLine y={2} stroke="var(--danger)" strokeDasharray="4 4" />
                   <Line
                     type="monotone"
                     dataKey="gpa"
-                    stroke="#4f46e5"
+                    stroke="var(--primary)"
                     strokeWidth={2.5}
-                    dot={{ r: 5, fill: "#4f46e5" }}
+                    dot={{ r: 5, fill: "var(--primary)" }}
                     activeDot={{ r: 7 }}
                   />
                 </LineChart>
