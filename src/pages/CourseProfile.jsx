@@ -610,22 +610,7 @@ export default function CourseProfile() {
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
           <button
             onClick={() => navigate(-1)}
-            style={{
-              background: "#ffffff",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "4px 10px",
-              fontSize: "12px",
-              fontWeight: 600,
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+            className="hero-back-btn"
           >
             &larr; Back to Courses
           </button>
@@ -1480,16 +1465,16 @@ export default function CourseProfile() {
                                 key={tIdx}
                                 style={{
                                   fontSize: "12px",
-                                  background: "#ffffff",
-                                  border: "1px solid #e2e8f0",
-                                  color: "var(--text, #334155)",
+                                  background: "var(--bg)",
+                                  border: "1px solid var(--border)",
+                                  color: "var(--text)",
                                   padding: "4px 10px",
                                   borderRadius: "6px",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: "6px",
                                   lineHeight: 1.35,
-                                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                                  boxShadow: "var(--shadow-sm)",
                                 }}
                               >
                                 <span

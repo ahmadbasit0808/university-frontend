@@ -633,26 +633,7 @@ export default function TopStudents() {
         >
           <button
             onClick={() => navigate("/")}
-            style={{
-              background: "#ffffff",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "5px 12px",
-              fontSize: "12px",
-              fontWeight: 600,
-              color: "var(--text)",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor = "var(--primary)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.borderColor = "var(--border)")
-            }
+            className="hero-back-btn"
           >
             <ArrowLeft size={14} />
             <span>Back to Dashboard</span>

@@ -137,7 +137,7 @@ export default function StudentSemesterResult() {
     <div className="page">
       <div className="page-header">
         <div>
-          <button onClick={() => navigate(-1)} className="btn-link back-link">
+          <button onClick={() => navigate(-1)} className="back-link">
             &larr; Back
           </button>
           <h1>Result — {student?.name}</h1>

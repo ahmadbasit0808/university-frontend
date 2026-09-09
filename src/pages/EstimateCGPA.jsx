@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { getStudents } from "../api/students";
 import { getTranscript } from "../api/results";
 import { getGradingScales } from "../api/gradingScale";
@@ -54,6 +54,7 @@ function getSemesterRank(name) {
 }
 
 export default function EstimateCGPA() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialRollNo =
     searchParams.get("rollNo") ||
@@ -835,6 +836,12 @@ export default function EstimateCGPA() {
       {/* Header */}
       <div className="page-header">
         <div>
+          <button
+            onClick={() => navigate(-1)}
+            className="back-link"
+          >
+            &larr; Back
+          </button>
           <div className="estimator-title-row">
             <span className="estimator-badge-icon">
               <Calculator size={24} />

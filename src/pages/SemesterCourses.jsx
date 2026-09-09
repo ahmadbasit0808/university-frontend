@@ -130,12 +130,6 @@ export default function SemesterCourses() {
           <button
             onClick={() => navigate(-1)}
             className="back-link"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
           >
             &larr; Back
           </button>
