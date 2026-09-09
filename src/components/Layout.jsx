@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Bell } from "lucide-react";
 import Sidebar from "./Sidebar";
 import NotificationPanel from "./NotificationPanel";
+import ThemeToggle from "./common/ThemeToggle";
 import { getNotifications } from "../api/notifications";
 
 const LAST_SEEN_KEY = "notifications_last_seen";
@@ -79,6 +80,8 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      <ThemeToggle variant="floating" />
 
       <button
         className="notification-bell"

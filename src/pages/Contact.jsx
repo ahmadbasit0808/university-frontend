@@ -871,7 +871,8 @@ export default function Contact() {
                     <p
                       style={{
                         whiteSpace: "pre-wrap",
-                        background: "#f8fafc",
+                        background: "var(--bg)",
+                        border: "1px solid var(--border)",
                         padding: 12,
                         borderRadius: 8,
                       }}

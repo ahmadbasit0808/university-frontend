@@ -458,7 +458,7 @@ export default function CourseProfile() {
                 key={idx}
                 style={{
                   padding: "12px 14px",
-                  background: "#f8fafc",
+                  background: "var(--bg)",
                   border: "1px solid var(--border)",
                   borderRadius: "10px",
                   fontSize: "13px",
@@ -1024,9 +1024,9 @@ export default function CourseProfile() {
                 ];
                 const badge = rankBadges[idx] || {
                   label: `#${idx + 1}`,
-                  color: "#64748b",
-                  bg: "#f8fafc",
-                  border: "#e2e8f0",
+                  color: "var(--text-muted)",
+                  bg: "var(--bg)",
+                  border: "var(--border)",
                 };
 
                 return (
@@ -1039,7 +1039,7 @@ export default function CourseProfile() {
                       justifyContent: "space-between",
                       gap: "12px",
                       padding: "12px 16px",
-                      background: "#f8fafc",
+                      background: "var(--bg)",
                       border: "1px solid var(--border)",
                       borderRadius: "12px",
                       cursor: "pointer",
@@ -1048,12 +1048,12 @@ export default function CourseProfile() {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = "var(--primary)";
-                      e.currentTarget.style.background = "#ffffff";
+                      e.currentTarget.style.background = "var(--card-bg)";
                       e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = "var(--border)";
-                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.background = "var(--bg)";
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
@@ -1340,7 +1340,7 @@ export default function CourseProfile() {
                     paddingLeft: "36px",
                     paddingRight: "30px",
                     fontSize: "13px",
-                    background: "#f8fafc",
+                    background: "var(--bg)",
                     border: "1px solid var(--border)",
                     borderRadius: "8px",
                     width: "100%",
@@ -1394,7 +1394,7 @@ export default function CourseProfile() {
                       <div
                         key={sIdx}
                         style={{
-                          background: "#f8fafc",
+                          background: "var(--bg)",
                           border: "1px solid var(--border)",
                           borderRadius: "12px",
                           overflow: "hidden",

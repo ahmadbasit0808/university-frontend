@@ -31,7 +31,7 @@
   <meta name="google-site-verification" content="RUJ0JZWRBUwBWUBQW1KXoEjvBYvCTBdkvBroeTSUbdk" />
   <meta name="google-site-verification" content="lXZqBi32Dp-ChRseKereX6dAQagd-nJgdOKwimKlp1s" />
 
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#4f46e5" />
 
   <meta name="mobile-web-app-capable" content="yes" />
 
@@ -39,6 +39,19 @@
 
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('pugc_theme_preference');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = (stored === 'dark' || (!stored && prefersDark) || (stored === 'system' && prefersDark)) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0f19' : '#4f46e5');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
 <body>

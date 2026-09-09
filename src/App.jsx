@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { StudentProvider } from "./context/StudentContext";
 import Layout from "./components/Layout";
@@ -31,12 +32,13 @@ import { TableSortProvider } from "./context/TableSortContext";
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <StudentProvider>
-          <TableSortProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route element={<Layout />}>
+      <ThemeProvider>
+        <AuthProvider>
+          <StudentProvider>
+            <TableSortProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/top-students" element={<TopStudents />} />
                 <Route path="/students" element={<Students />} />
@@ -76,7 +78,8 @@ function App() {
           </TableSortProvider>
         </StudentProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </ThemeProvider>
+  </BrowserRouter>
   );
 }
 
