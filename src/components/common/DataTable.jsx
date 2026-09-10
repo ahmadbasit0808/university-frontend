@@ -231,10 +231,11 @@ export default function DataTable({
                 highlightKey &&
                 highlightValue?.length > 0 &&
                 highlightValue.includes(String(row[highlightKey]));
+              const customRowClass = rowClassName ? rowClassName(row) : "";
               return (
                 <div
-                  className={`data-card ${isHighlighted ? "row-highlighted" : ""} ${rowClassName ? rowClassName(row) : ""}`}
-                  style={!isHighlighted && cardAccent ? { borderLeftColor: cardAccent } : undefined}
+                  className={`data-card ${isHighlighted ? "row-highlighted" : ""} ${customRowClass}`}
+                  style={!isHighlighted && !customRowClass && cardAccent ? { borderLeftColor: cardAccent } : undefined}
                   key={row.id || row.roll_no || row.course_code || row.teacher_id || index}
                 >
                   {columns.map((col) => (

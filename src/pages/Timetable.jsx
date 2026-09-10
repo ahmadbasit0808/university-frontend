@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getSemesters } from "../api/semesters";
 import { useNavigate } from "react-router-dom";
 import {
@@ -58,6 +58,15 @@ export default function Timetable() {
   const [latestSemesterUrl, setLatestSemesterUrl] = useState("");
   const navigate = useNavigate();
   const [isLatest, setIsLatest] = useState(true);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  // Periodically refresh current time to dynamically update ongoing lecture
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   // today | all | day
   const [viewMode, setViewMode] = useState("today");
@@ -81,7 +90,7 @@ export default function Timetable() {
         setIsLatest(true);
         setLatestSemesterUrl(
           semesters.find((s) => s.id === Number(latestMetaId))?.timetable_url ||
-            "",
+          "",
         );
         if (mode === "all") {
           setViewMode("all");
@@ -125,7 +134,7 @@ export default function Timetable() {
 
       const rows = processTimetableData(res.data);
 
-      setIsLatest(false);
+      setIsLatest(Boolean(metadataId && Number(semesterId) === Number(metadataId)));
       setViewMode("all");
       setSelectedDay("");
       setMetadataId(Number(semesterId));
@@ -222,6 +231,75 @@ export default function Timetable() {
     return "Timetable";
   };
 
+  const isCurrentTimetable =
+    isLatest ||
+    !selectedSemesterId ||
+    (metadataId && Number(selectedSemesterId) === Number(metadataId));
+
+  const isCurrentLecture = useCallback(
+    (row) => {
+      if (!row || !row.day_of_week || !row.start_time || !row.end_time) return false;
+
+      const today = getCurrentDay();
+
+      if (row.day_of_week !== today) return false;
+
+      const currentMinutes =
+        currentTime.getHours() * 60 + currentTime.getMinutes();
+
+      const [sh, sm] = row.start_time.split(":").map(Number);
+      const [eh, em] = row.end_time.split(":").map(Number);
+
+      if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return false;
+
+      const start = sh * 60 + sm;
+      const end = eh * 60 + em;
+
+      return currentMinutes >= start && currentMinutes < end;
+    },
+    [currentTime],
+  );
+
+  // Find the earliest start time for remaining lectures today
+  const nextLectureStartTime = useMemo(() => {
+    const today = getCurrentDay();
+    const currentMinutes =
+      currentTime.getHours() * 60 + currentTime.getMinutes();
+
+    const futureStarts = (timetable || [])
+      .filter((r) => {
+        if (r.day_of_week !== today || !r.start_time) return false;
+        const [sh, sm] = r.start_time.split(":").map(Number);
+        if (isNaN(sh) || isNaN(sm)) return false;
+        const start = sh * 60 + sm;
+        return start > currentMinutes;
+      })
+      .map((r) => {
+        const [sh, sm] = r.start_time.split(":").map(Number);
+        return sh * 60 + sm;
+      })
+      .sort((a, b) => a - b);
+
+    return futureStarts.length > 0 ? futureStarts[0] : null;
+  }, [timetable, currentTime]);
+
+  const isUpcomingLecture = useCallback(
+    (row) => {
+      if (!row || !row.day_of_week || !row.start_time || nextLectureStartTime === null) {
+        return false;
+      }
+      const today = getCurrentDay();
+      if (row.day_of_week !== today) return false;
+
+      const [sh, sm] = row.start_time.split(":").map(Number);
+      if (isNaN(sh) || isNaN(sm)) return false;
+      const start = sh * 60 + sm;
+
+      return start === nextLectureStartTime;
+    },
+    [nextLectureStartTime],
+  );
+
   const columns = [
     {
       key: "course_code",
@@ -232,26 +310,39 @@ export default function Timetable() {
       key: "course_name",
       label: "Course Name",
       sortable: true,
-      render: (val, row) => (
-        <span
-          className="course-link-2"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/courses/${row.course_code}`);
-          }}
-        >
-          {val}
-        </span>
-      ),
+      render: (val, row) => {
+        const isCurrent = isCurrentTimetable && isCurrentLecture(row);
+        const isUpcoming = isCurrentTimetable && !isCurrent && isUpcomingLecture(row);
+        return (
+          <span
+            className="course-link-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/courses/${row.course_code}`);
+            }}
+          >
+            {val}
+            {isCurrent && (
+              <span className="current-lecture-badge" title="Happening Now">
+                <span className="live-dot" /> Live
+              </span>
+            )}
+            {isUpcoming && (
+              <span className="upcoming-lecture-badge" title="Next Upcoming Lecture">
+                Up Next
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       key: "session_type",
       label: "Type",
       render: (val) => (
         <span
-          className={`grade-badge ${
-            val === "Lab" ? "grade-b-plus" : "grade-a-plus"
-          }`}
+          className={`grade-badge ${val === "Lab" ? "grade-b-plus" : "grade-a-plus"
+            }`}
         >
           {val || "Theory"}
         </span>
@@ -291,23 +382,6 @@ export default function Timetable() {
     { key: "room", label: "Room", sortable: true },
   ];
 
-  const isCurrentLecture = (row) => {
-    const today = getCurrentDay();
-
-    if (row.day_of_week !== today) return false;
-
-    const now = new Date();
-
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    const [sh, sm] = row.start_time.split(":").map(Number);
-    const [eh, em] = row.end_time.split(":").map(Number);
-
-    const start = sh * 60 + sm;
-    const end = eh * 60 + em;
-
-    return currentMinutes >= start && currentMinutes < end;
-  };
   return (
     <div className="page">
       <div className="page-header">
@@ -381,18 +455,16 @@ export default function Timetable() {
           }}
         >
           <button
-            className={`btn ${
-              viewMode === "today" ? "btn-primary" : "btn-secondary"
-            }`}
+            className={`btn ${viewMode === "today" ? "btn-primary" : "btn-secondary"
+              }`}
             onClick={showToday}
           >
             Today
           </button>
 
           <button
-            className={`btn ${
-              viewMode === "all" ? "btn-primary" : "btn-secondary"
-            }`}
+            className={`btn ${viewMode === "all" ? "btn-primary" : "btn-secondary"
+              }`}
             onClick={showAll}
           >
             Full Timetable
@@ -414,11 +486,10 @@ export default function Timetable() {
           {DAYS.map((day) => (
             <button
               key={day}
-              className={`btn btn-sm ${
-                selectedDay === day && ["today", "day"].includes(viewMode)
-                  ? "btn-primary"
-                  : "btn-secondary"
-              }`}
+              className={`btn btn-sm ${selectedDay === day && ["today", "day"].includes(viewMode)
+                ? "btn-primary"
+                : "btn-secondary"
+                }`}
               onClick={() => handleDayFilter(day)}
             >
               {DAY_LABELS[day]}
@@ -433,9 +504,12 @@ export default function Timetable() {
         loading={loading}
         defaultSortKey="day_order"
         defaultSortDir="asc"
-        rowClassName={(row) =>
-          isLatest && isCurrentLecture(row) ? "current-lecture" : ""
-        }
+        rowClassName={(row) => {
+          if (!isCurrentTimetable) return "";
+          if (isCurrentLecture(row)) return "current-lecture";
+          if (isUpcomingLecture(row)) return "upcoming-lecture";
+          return "";
+        }}
         tableId="timetable"
         cardAccent="#d744e7"
       />
