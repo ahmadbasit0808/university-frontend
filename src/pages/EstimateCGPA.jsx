@@ -23,6 +23,7 @@ import {
   RefreshCw,
   X,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 
 // Default fallback grading scale if API scale is empty or loading
@@ -834,36 +835,27 @@ export default function EstimateCGPA() {
   return (
     <div className="page estimate-cgpa-page">
       {/* Header */}
-      <div className="page-hero-card">
-        <button
-          onClick={() => navigate(-1)}
-          className="back-link"
-        >
-          &larr; Back
-        </button>
-        <div className="page-header">
-          <div>
+      <div className="page-hero-card estimator-hero-top-card">
+        <div className="page-header estimator-page-header">
+          <div className="estimator-title-group">
             <div className="estimator-title-row">
               <span className="estimator-badge-icon">
                 <Calculator size={24} />
               </span>
               <div>
                 <h1>CGPA Estimator & Simulator</h1>
-                <p className="text-muted">
-                  Estimate marks for your latest semester courses and calculate improvements from repeated subjects.
-                </p>
               </div>
             </div>
+            {transcriptData && lastSaved && (
+              <span className="auto-save-pill" title="Estimations saved automatically in browser storage">
+                <CheckCircle2 size={13} />
+                <span>Auto-Saved</span>
+              </span>
+            )}
           </div>
 
           {transcriptData && (
             <div className="estimator-header-actions">
-              {lastSaved && (
-                <span className="auto-save-pill" title="Estimations saved automatically in browser storage">
-                  <CheckCircle2 size={13} />
-                  <span>Auto-Saved</span>
-                </span>
-              )}
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={handleResetSimulation}
@@ -873,7 +865,8 @@ export default function EstimateCGPA() {
                 <span>Reset Default</span>
               </button>
               <Link to={`/results/${selectedRollNo}`} className="btn btn-outline btn-sm">
-                View Transcript
+                <ExternalLink size={14} />
+                <span>View Transcript</span>
               </Link>
             </div>
           )}
@@ -1091,9 +1084,6 @@ export default function EstimateCGPA() {
                   <h3>
                     Latest Semester Courses ({activeSemesterMeta?.semester || "5th Semester"})
                   </h3>
-                  <p className="text-muted">
-                    Enter your estimated marks for {activeSemesterMeta?.semester || "latest"} semester courses to calculate your projected GPA and CGPA.
-                  </p>
                 </div>
               </div>
 
@@ -1332,9 +1322,6 @@ export default function EstimateCGPA() {
                 </span>
                 <div>
                   <h3>Repeat / Improvement Courses</h3>
-                  <p className="text-muted">
-                    Search and pick any previously taken courses you want to retake. Enter your new estimated marks to see the CGPA boost.
-                  </p>
                 </div>
               </div>
 
@@ -1700,48 +1687,77 @@ export default function EstimateCGPA() {
                 </span>
                 <div>
                   <h3>Target CGPA Goal Calculator</h3>
-                  <p className="text-muted">
-                    Set your desired target CGPA to determine the average Grade Point (GP) needed in your{" "}
-                    {activeSemesterMeta?.semester?.toLowerCase().includes("semester")
-                      ? activeSemesterMeta.semester
-                      : `${activeSemesterMeta?.semester || "latest"} Semester`}.
-                  </p>
                 </div>
+              </div>
+
+              {/* Quick Target Presets */}
+              <div className="quick-presets-group">
+                <span className="preset-label">Quick:</span>
+                {["3.00", "3.30", "3.50", "3.70", "4.00"].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`btn btn-xs btn-preset ${targetCgpa === preset ? "active" : ""}`}
+                    onClick={() => setTargetCgpa(preset)}
+                  >
+                    {preset}
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="target-input-row">
               <div className="target-field-wrapper">
-                <label>Desired Target CGPA:</label>
-                <input
-                  type="number"
-                  min="2.0"
-                  max="4.0"
-                  step="0.01"
-                  placeholder="e.g. 3.50"
-                  value={targetCgpa}
-                  onChange={(e) => setTargetCgpa(e.target.value)}
-                  className="target-cgpa-input"
-                />
+                <label htmlFor="target-cgpa-input">Set your desired target CGPA:</label>
+                <div className="target-input-control">
+                  <input
+                    id="target-cgpa-input"
+                    type="number"
+                    min="2.0"
+                    max="4.0"
+                    step="0.01"
+                    placeholder="e.g. 3.50"
+                    value={targetCgpa}
+                    onChange={(e) => setTargetCgpa(e.target.value)}
+                    className="target-cgpa-input"
+                  />
+                  {targetCgpa && (
+                    <button
+                      type="button"
+                      className="target-clear-btn"
+                      onClick={() => setTargetCgpa("")}
+                      title="Clear target"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {targetAnalysis && (
                 <div className={`target-analysis-result status-${targetAnalysis.status}`}>
                   {targetAnalysis.status === "already_met" && (
                     <div className="target-msg success">
-                      <CheckCircle2 size={20} />
-                      <span>
-                        Target of <strong>{targetAnalysis.target.toFixed(2)}</strong> is already met by your current CGPA!
-                      </span>
+                      <div className="target-msg-icon-wrapper">
+                        <CheckCircle2 size={18} />
+                      </div>
+                      <div className="target-msg-content">
+                        <h4 className="target-msg-title">Target Already Met!</h4>
+                        <p className="target-msg-desc">
+                          Target of <strong>{targetAnalysis.target.toFixed(2)}</strong> is already met by your current CGPA.
+                        </p>
+                      </div>
                     </div>
                   )}
 
                   {targetAnalysis.status === "achievable" && (
                     <div className="target-msg achievable">
-                      <Award size={20} />
-                      <div>
-                        <strong>Achievable Goal!</strong>
-                        <p>
+                      <div className="target-msg-icon-wrapper">
+                        <Award size={18} />
+                      </div>
+                      <div className="target-msg-content">
+                        <h4 className="target-msg-title">Achievable Goal!</h4>
+                        <p className="target-msg-desc">
                           You need an average Grade Point of{" "}
                           <span className="highlight-gp">
                             {targetAnalysis.requiredAverageGp.toFixed(2)} GP
@@ -1755,21 +1771,14 @@ export default function EstimateCGPA() {
 
                   {targetAnalysis.status === "impossible" && (
                     <div className="target-msg impossible">
-                      <TrendingDown size={20} />
-                      <div>
-                        <strong>Target Exceeds Maximum Possible for this Semester</strong>
-                        <p>
+                      <div className="target-msg-icon-wrapper">
+                        <TrendingDown size={18} />
+                      </div>
+                      <div className="target-msg-content">
+                        <h4 className="target-msg-title">Target Exceeds Maximum Possible</h4>
+                        <p className="target-msg-desc">
                           Even with a perfect 4.00 GP across your semester credits, the maximum reachable CGPA would be{" "}
-                          <strong>
-                            {(
-                              (baseAcademicStats.totalObtainedGpts +
-                                simulationResults.repeatGptDelta +
-                                targetAnalysis.activeSemCredits * 4.0) /
-                              simulationResults.projectedTotalGpts *
-                              4.0
-                            ).toFixed(2)}
-                          </strong>
-                          . Consider repeating more past courses to raise your baseline.
+                          <strong>{targetAnalysis.maxReachableCgpa.toFixed(2)}</strong>. Consider repeating more past courses to raise your baseline.
                         </p>
                       </div>
                     </div>

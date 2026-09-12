@@ -354,6 +354,18 @@
   background: #047857;
 }
 
+.btn-outline {
+  background: var(--card-bg);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .btn-sm {
   padding: 4px 12px;
   font-size: 13px;
@@ -4813,19 +4825,46 @@ html.dark .data-card.tomorrow-exam {
   gap: 24px;
 }
 
+.page-hero-card.estimator-hero-top-card {
+  padding: 18px 24px;
+}
+
+.estimator-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.estimator-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .estimator-title-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+}
+
+.estimator-title-row h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 .estimator-badge-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
@@ -4836,7 +4875,7 @@ html.dark .data-card.tomorrow-exam {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* Student Selector Card */
@@ -5366,6 +5405,14 @@ html.dark .data-card.tomorrow-exam {
   color: var(--primary);
 }
 
+.btn-preset.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+}
+
 .add-courses-controls-bar {
   display: flex;
   align-items: center;
@@ -5466,13 +5513,13 @@ html.dark .data-card.tomorrow-exam {
 .target-input-row {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .target-field-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -5482,63 +5529,137 @@ html.dark .data-card.tomorrow-exam {
   color: var(--text);
 }
 
+.target-input-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .target-cgpa-input {
   width: 140px;
-  padding: 10px 14px;
+  padding: 9px 32px 9px 14px;
   font-size: 16px;
   font-weight: 700;
   border-radius: var(--radius);
   border: 2px solid var(--success);
   background: var(--input-bg);
   color: var(--success);
+  transition: all 0.2s ease;
 }
 
 .target-cgpa-input:focus {
   border-color: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  outline: none;
+}
+
+.target-clear-btn {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.target-clear-btn:hover {
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.1);
 }
 
 .target-analysis-result {
   border-radius: var(--radius);
-  padding: 16px 20px;
 }
 
 .target-msg {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
+}
+
+.target-msg-icon-wrapper {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .target-msg.success {
   color: var(--gpa-excellent-text);
   background: var(--gpa-excellent-bg);
-  padding: 12px 16px;
-  border-radius: var(--radius);
+  border: 1px solid var(--gpa-excellent-border);
+}
+
+.target-msg.success .target-msg-icon-wrapper {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--gpa-excellent-text);
 }
 
 .target-msg.achievable {
   color: var(--gpa-excellent-text);
   background: var(--gpa-excellent-bg);
   border: 1px solid var(--gpa-excellent-border);
-  padding: 14px 18px;
-  border-radius: var(--radius);
 }
 
-.highlight-gp {
-  font-weight: 800;
+.target-msg.achievable .target-msg-icon-wrapper {
+  background: rgba(16, 185, 129, 0.2);
   color: var(--gpa-excellent-text);
-  background: var(--gpa-excellent-bg);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 .target-msg.impossible {
   color: var(--gpa-poor-text);
   background: var(--gpa-poor-bg);
   border: 1px solid var(--gpa-poor-border);
-  padding: 14px 18px;
-  border-radius: var(--radius);
+}
+
+.target-msg.impossible .target-msg-icon-wrapper {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--gpa-poor-text);
+}
+
+.target-msg-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.target-msg-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.target-msg-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 4px 0 0 0;
+  color: var(--text);
+}
+
+.highlight-gp {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.22);
+  color: var(--gpa-excellent-text);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  white-space: nowrap;
 }
 
 /* Initial Empty Banner */
@@ -6127,23 +6248,6 @@ html.dark .data-card.tomorrow-exam {
     gap: 16px;
   }
 
-  .estimator-badge-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-  }
-
-  .estimator-header-actions {
-    width: 100%;
-    margin-top: 8px;
-  }
-
-  .estimator-header-actions .btn {
-    flex: 1;
-    text-align: center;
-    justify-content: center;
-  }
-
   .estimator-section-card {
     padding: 18px;
     gap: 14px;
@@ -6194,13 +6298,109 @@ html.dark .data-card.tomorrow-exam {
 
   .target-field-wrapper {
     width: 100%;
-    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .target-field-wrapper label {
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .target-input-control {
+    width: 100%;
   }
 
   .target-cgpa-input {
-    width: 130px;
+    width: 100%;
+    max-width: 100%;
     height: 42px;
     font-size: 16px;
+    padding: 8px 34px 8px 14px;
+    box-sizing: border-box;
+  }
+
+  .target-msg {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .target-msg-icon-wrapper {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    margin-top: 1px;
+  }
+
+  .target-msg-icon-wrapper svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .target-msg-title {
+    font-size: 13.5px;
+  }
+
+  .target-msg-desc {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
+  .highlight-gp {
+    font-size: 12px;
+    padding: 1px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-hero-card.estimator-hero-top-card {
+    padding: 16px 14px;
+  }
+
+  .estimator-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .estimator-title-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .estimator-title-row h1 {
+    font-size: 19px;
+    white-space: normal;
+  }
+
+  .estimator-badge-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .estimator-header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .estimator-header-actions .btn {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    text-align: center;
+    justify-content: center;
+    box-sizing: border-box;
+    white-space: nowrap;
   }
 }
 
