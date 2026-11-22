@@ -133,7 +133,6 @@ export default function Teachers() {
         </span>
       ),
     },
-    { key: "phone", label: "Phone" },
     { key: "designation", label: "Designation" },
     { key: "gender", label: "Gender" },
   ];

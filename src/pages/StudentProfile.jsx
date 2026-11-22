@@ -93,8 +93,8 @@ export default function StudentProfile() {
     //   label: "Session",
     //   value: semesters[0].session || "—",
     // },
-    { icon: <Mail size={16} />, label: "Email", value: student.email || "—" },
-    { icon: <Phone size={16} />, label: "Phone", value: student.phone || "—" },
+    { icon: <Mail size={16} />, label: "Email", value: "—" },
+    { icon: <Phone size={16} />, label: "Phone", value: "—" },
   ];
 
   return (
